@@ -75,7 +75,7 @@ const limitColor = Fn(({ uv }) => {
 const colour = limitColor({ uv: uvScaled })
 material.colorNode = mix(white, colour, line1)
 // add the line to the material
-//material.fragmentNode = vec4(vec3(line1), 1.0)
+material.fragmentNode = vec4(vec3(line1), 1.0)
 
 const geometry = new THREE.PlaneGeometry(10, 10, 100, 100)
 const textureMesh = new THREE.Mesh(geometry, material)
