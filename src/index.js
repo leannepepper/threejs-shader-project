@@ -20,8 +20,9 @@ import {
   Scene
 } from 'three/tsl'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import ragingSeaMesh from './ragingSeaMesh.js'
-import textureMesh from './TextureMesh.js'
+import ragingSeaMesh from './shaders/ragingSeaMesh.js'
+import textureMesh from './shaders/TextureMesh.js'
+import smoothstepShaderMesh from './shaders/smoothstepMesh.js'
 
 // Scene, Camera, Renderer
 const scene = new Scene()
@@ -44,7 +45,8 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setClearColor('#19191f')
 
 //scene.add(ragingSeaMesh)
-scene.add(textureMesh)
+//scene.add(textureMesh)
+scene.add(smoothstepShaderMesh)
 
 // Camera
 camera.position.z = 75
