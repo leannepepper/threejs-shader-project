@@ -55,27 +55,45 @@ const green = vec3(0, 1, 0)
 const blue = vec3(0, 0, 1)
 const white = vec3(1, 1, 1)
 const stepColor = vec3(step(0.5, uvScaled.x))
-const mixColor = mix(red, green, uvScaled.x)
+const mixColor = mix(red, green, uvScaled.y)
+
+const value1 = uvScaled.x
+const value2 = smoothstep(0.0, 1.0, uvScaled.x)
 
 const line1 = smoothstep(0.0, 0.005, abs(uvScaled.y.sub(0.5)))
+const linearLine = smoothstep(
+  0.0,
+  0.0075,
+  abs(uvScaled.y.sub(mix(0.5, 1.0, value1)))
+)
+const smoothLine = smoothstep(
+  0.0,
+  0.0075,
+  abs(uvScaled.y.sub(mix(0.0, 0.5, value2)))
+)
+
 material.colorNode = vec4(vec3(line1), 1.0)
 
 const limitColor = Fn(({ uv }) => {
   const limit = 0.5
 
   // Convert to variable using `.toVar()` to be able to use assignments.
-  const colorResult = vec3(1, 0, 0).toVar()
+  const colorResult = white.toVar()
   If(uv.y.greaterThan(limit), () => {
-    colorResult.assign(mix(red, green, uv.y))
+    colorResult.assign(mix(red, blue, uv.x))
+  }).ElseIf(uv.y.lessThan(limit), () => {
+    colorResult.assign(mix(red, blue, smoothstep(0.0, 1.0, uv.x)))
   })
 
   return colorResult.toVec3()
 })
 
-const colour = limitColor({ uv: uvScaled })
-material.colorNode = mix(white, colour, line1)
-// add the line to the material
-material.fragmentNode = vec4(vec3(line1), 1.0)
+let colour = limitColor({ uv: uvScaled })
+colour = mix(white, colour, line1)
+colour = mix(white, colour, linearLine)
+colour = mix(white, colour, smoothLine)
+
+material.colorNode = colour
 
 const geometry = new THREE.PlaneGeometry(10, 10, 100, 100)
 const textureMesh = new THREE.Mesh(geometry, material)
