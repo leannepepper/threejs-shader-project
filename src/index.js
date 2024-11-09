@@ -24,6 +24,8 @@ import ragingSeaMesh from './shaders/ragingSeaMesh.js'
 import textureMesh from './shaders/TextureMesh.js'
 import smoothstepShaderMesh from './shaders/smoothstepMesh.js'
 import circleMesh from './shaders/Circle.js'
+import gridMesh from './shaders/Grid.js'
+import warpedSphereMesh from './shaders/WarpedSphere.js'
 
 // Scene, Camera, Renderer
 const scene = new Scene()
@@ -48,7 +50,9 @@ renderer.setClearColor('#19191f')
 //scene.add(ragingSeaMesh)
 //scene.add(textureMesh)
 //scene.add(smoothstepShaderMesh)
-scene.add(circleMesh)
+//scene.add(circleMesh)
+//scene.add(gridMesh)
+scene.add(warpedSphereMesh)
 
 // Camera
 camera.position.z = 75

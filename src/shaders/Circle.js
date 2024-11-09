@@ -31,7 +31,7 @@ import {
 
 const material = new MeshBasicNodeMaterial()
 
-const uvScaled = uv().mul(1).toVar()
+const uvVar = uv()
 const shapeColor = color('#ff6088')
 
 // SDF Circle
@@ -41,7 +41,7 @@ const sdfCircle = Fn(({ pos }) => {
 })
 
 const resolution = window.innerWidth / window.innerHeight
-const pixelCoords = uvScaled.sub(vec2(0.5)).mul(resolution).toVar()
+const pixelCoords = uvVar.sub(vec2(0.5)).mul(resolution).toVar()
 
 const d = sdfCircle({ pos: pixelCoords })
 const circle = mix(shapeColor, vec3(1.0), step(0, d))
