@@ -27,6 +27,7 @@ import circleMesh from './shaders/Circle.js'
 import gridMesh from './shaders/Grid.js'
 import warpedSphereMesh from './shaders/WarpedSphere.js'
 import starsMesh from './shaders/Stars.js'
+import RaymarchMesh from './shaders/Raymarch.js'
 
 // Scene, Camera, Renderer
 const scene = new Scene()
@@ -54,7 +55,8 @@ renderer.setClearColor('#19191f')
 //scene.add(circleMesh)
 //scene.add(gridMesh)
 //scene.add(warpedSphereMesh)
-scene.add(starsMesh)
+//scene.add(starsMesh)
+scene.add(RaymarchMesh)
 
 // Camera
 camera.position.z = 75
