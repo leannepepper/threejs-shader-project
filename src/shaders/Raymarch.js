@@ -90,22 +90,9 @@ const calculateSceneSDF = Fn(({ pos }) => {
   const colorForShapes = vec3(0.0).toVar()
 
   //Plane
-  // Rotation matrix to rotate the plane around the X-axis by 90 degrees
-  const rotationMatrix = mat3(
-    vec3(1.0, 0.0, 0.0),
-    vec3(0.0, Math.cos(Math.PI / 6), -Math.sin(Math.PI / 6)),
-    vec3(0.0, Math.sin(Math.PI / 6), Math.cos(Math.PI / 6))
-  )
-
-  // Translate the plane down
-  const translatedPos = pos.sub(vec3(0.0, -2.0, 0.0))
-
-  // Apply rotation to the plane's position
-  const rotatedPos = mul(rotationMatrix, translatedPos)
-
   currentShapeDist.assign(
     sdfPlane({
-      pos: rotatedPos
+      pos: pos.sub(vec3(0.0, -2.0, 0.0))
     })
   )
   colorForShapes.assign(GREY)
@@ -114,7 +101,7 @@ const calculateSceneSDF = Fn(({ pos }) => {
   //cube
   currentShapeDist.assign(
     sdfCube({
-      pos: pos.sub(vec3(-2.0, -2.0, 4.0)),
+      pos: pos.sub(vec3(-2.0, -0.85, 5.0)),
       size: vec3(1.0)
     })
   )
@@ -126,7 +113,7 @@ const calculateSceneSDF = Fn(({ pos }) => {
   //sphere
   currentShapeDist.assign(
     sdfCube({
-      pos: pos.sub(vec3(2.0, -2.0, 4.0)),
+      pos: pos.sub(vec3(2.0, -0.85, 5.0)),
       size: vec3(1.0)
     })
   )
@@ -181,6 +168,33 @@ const calculateLighting = Fn(({ pos, normal, lightColor, lightDirection }) => {
 })
 
 /**
+ * Calculate shadows for the scene. From a point of an intersection, shoot a ray towards the light source and see if it hits anything. If it does, the point is in shadow, if it doesn't, the point is lit.
+ * @param {vec3} pos
+ * @param {vec3} lightDirection
+ * @returns {float} shadow
+ */
+const calculateShadows = Fn(({ pos, lightDirection }) => {
+  const distance = float(0.01).toVar()
+  const shadow = float(1.0).toVar()
+  const k = float(0.9) // Soft shadow factor
+
+  Loop({ type: 'int', start: 0, end: 64, condition: '<' }, () => {
+    const posToTest = pos.add(lightDirection.mul(distance))
+    const distanceToScene = calculateSceneSDF({ pos: posToTest }).w
+
+    If(distanceToScene.lessThan(0.001), () => {
+      shadow.assign(float(0.0)).toVar()
+      Break()
+    })
+
+    shadow.assign(min(shadow, k.mul(distanceToScene).div(distance)))
+    distance.assign(distance.add(distanceToScene))
+  })
+
+  return shadow
+})
+
+/**
  * Raymarch function, does the sphere tracing for the world
  * @param {vec3} cameraOrigin
  * @param {vec3} cameraDirection
@@ -218,16 +232,22 @@ const Raymarch = Fn(({ cameraOrigin, cameraDirection }) => {
   })
 
   const normal = calculateNormal({ pos: pos })
-  const lightDirection = normalize(vec3(1.0, 2.0, -1.0))
+  const lightDirection = normalize(vec3(0.0, 2.0, -1.0)).toVar()
   const lightColor = WHITE
+  const shadow = calculateShadows({
+    pos: pos,
+    lightDirection: lightDirection
+  }).toVar()
   const lighting = calculateLighting({
     pos: pos,
     normal: normal,
     lightColor: lightColor,
     lightDirection: lightDirection
-  })
+  }).toVar()
 
-  return exitColor.mul(lighting)
+  const newValue = lighting.mul(shadow)
+
+  return exitColor.mul(newValue)
 })
 
 const cameraOrigin = vec3(0.0, 0.0, 0.0)
@@ -238,7 +258,7 @@ material.colorNode = Raymarch({
   cameraDirection: cameraDirection
 })
 
-const geometry = new THREE.PlaneGeometry(10, 10, 100, 100)
+const geometry = new THREE.PlaneGeometry(20, 20, 100, 100)
 const RaymarchMesh = new THREE.Mesh(geometry, material)
 
 export default RaymarchMesh
