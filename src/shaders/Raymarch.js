@@ -7,6 +7,7 @@ import {
   vec2,
   vec3,
   vec4,
+  mat3,
   modelWorldMatrix,
   timerLocal,
   positionLocal,
@@ -30,6 +31,7 @@ import {
   fract,
   max,
   min,
+  dot,
   float,
   dFdx,
   dFdy,
@@ -87,10 +89,23 @@ const calculateSceneSDF = Fn(({ pos }) => {
   const sceneForShapes = float(0.0).toVar()
   const colorForShapes = vec3(0.0).toVar()
 
-  //plane
+  //Plane
+  // Rotation matrix to rotate the plane around the X-axis by 90 degrees
+  const rotationMatrix = mat3(
+    vec3(1.0, 0.0, 0.0),
+    vec3(0.0, Math.cos(Math.PI / 6), -Math.sin(Math.PI / 6)),
+    vec3(0.0, Math.sin(Math.PI / 6), Math.cos(Math.PI / 6))
+  )
+
+  // Translate the plane down
+  const translatedPos = pos.sub(vec3(0.0, -2.0, 0.0))
+
+  // Apply rotation to the plane's position
+  const rotatedPos = mul(rotationMatrix, translatedPos)
+
   currentShapeDist.assign(
     sdfPlane({
-      pos: positionLocal.sub(vec3(0.0, -6.0, 4.0))
+      pos: rotatedPos
     })
   )
   colorForShapes.assign(GREY)
@@ -99,7 +114,7 @@ const calculateSceneSDF = Fn(({ pos }) => {
   //cube
   currentShapeDist.assign(
     sdfCube({
-      pos: pos.sub(vec3(-2.0, 0.0, 4.0)),
+      pos: pos.sub(vec3(-2.0, -2.0, 4.0)),
       size: vec3(1.0)
     })
   )
@@ -110,9 +125,9 @@ const calculateSceneSDF = Fn(({ pos }) => {
 
   //sphere
   currentShapeDist.assign(
-    sdfSphere({
-      pos: pos.sub(vec3(2.0, 0.0, 4.0)),
-      r: 1.0
+    sdfCube({
+      pos: pos.sub(vec3(2.0, -2.0, 4.0)),
+      size: vec3(1.0)
     })
   )
   colorForShapes.assign(
@@ -125,6 +140,44 @@ const calculateSceneSDF = Fn(({ pos }) => {
   const allData = vec4(colorForShapes, sceneForShapes).toVar()
 
   return allData
+})
+
+/**
+ * Calculate the normals for the sdf shapes
+ * @param {vec3} pos
+ * @returns {vec3} normal
+ */
+const calculateNormal = Fn(({ pos }) => {
+  const EPS = 0.001
+  const normal = vec3(0.0).toVar()
+  const x = calculateSceneSDF({ pos: pos.add(vec3(EPS, 0.0, 0.0)) })
+    .w.toVar()
+    .sub(calculateSceneSDF({ pos: pos.sub(vec3(EPS, 0.0, 0.0)) }).w.toVar()) // remember, w is the distance returned from the SDF
+
+  const y = calculateSceneSDF({ pos: pos.add(vec3(0.0, EPS, 0.0)) })
+    .w.toVar()
+    .sub(calculateSceneSDF({ pos: pos.sub(vec3(0.0, EPS, 0.0)) }).w.toVar())
+
+  const z = calculateSceneSDF({ pos: pos.add(vec3(0.0, 0.0, EPS)) })
+    .w.toVar()
+    .sub(calculateSceneSDF({ pos: pos.sub(vec3(0.0, 0.0, EPS)) }).w.toVar())
+
+  normal.assign(normalize(vec3(x, y, z)))
+
+  return normal
+})
+
+/**
+ * Calculate the lighting for the scene. This is a basic lambertian lighting model
+ * @param {vec3} pos
+ * @param {vec3} normal
+ * @param {vec3} lightColor
+ * @param {vec3} lightDirection
+ * @returns {vec3} color
+ */
+const calculateLighting = Fn(({ pos, normal, lightColor, lightDirection }) => {
+  const dp = saturate(dot(normal, lightDirection))
+  return lightColor.mul(dp)
 })
 
 /**
@@ -164,7 +217,17 @@ const Raymarch = Fn(({ cameraOrigin, cameraDirection }) => {
     // Case 3: We haven't hit the scene yet, continue
   })
 
-  return exitColor
+  const normal = calculateNormal({ pos: pos })
+  const lightDirection = normalize(vec3(1.0, 2.0, -1.0))
+  const lightColor = WHITE
+  const lighting = calculateLighting({
+    pos: pos,
+    normal: normal,
+    lightColor: lightColor,
+    lightDirection: lightDirection
+  })
+
+  return exitColor.mul(lighting)
 })
 
 const cameraOrigin = vec3(0.0, 0.0, 0.0)
