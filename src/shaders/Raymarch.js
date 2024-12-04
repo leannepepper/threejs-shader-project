@@ -101,7 +101,9 @@ const calculateSceneSDF = Fn(({ pos }) => {
   //cube
   currentShapeDist.assign(
     sdfCube({
-      pos: pos.sub(vec3(-2.0, -0.85, 5.0)),
+      pos: pos.sub(
+        vec3(float(-1.0).add(sin(timerGlobal().mul(2.0))), -0.85, 5.0)
+      ),
       size: vec3(1.0)
     })
   )
@@ -111,12 +113,19 @@ const calculateSceneSDF = Fn(({ pos }) => {
   sceneForShapes.assign(min(sceneForShapes, currentShapeDist))
 
   //sphere
+  // currentShapeDist.assign(
+  //   sdfCube({
+  //     pos: pos.sub(vec3(2.0, -0.85, 5.0)),
+  //     size: vec3(1.0)
+  //   })
+  // )
   currentShapeDist.assign(
-    sdfCube({
+    sdfSphere({
       pos: pos.sub(vec3(2.0, -0.85, 5.0)),
-      size: vec3(1.0)
+      r: vec3(1.0)
     })
   )
+
   colorForShapes.assign(
     select(currentShapeDist.lessThan(sceneForShapes), BLUE, colorForShapes)
   )
