@@ -79,19 +79,46 @@ const pixelCoords = uvVar.sub(vec2(0.5)).mul(resolution).toVar()
 // circle
 const circle = sdfCircle({ pos: pixelCoords, r: 1 })
 
-//Segment
-const topVec = vec2(0, 0.8)
-const noiseFactor = simplexNoise3d(vec3(timerGlobal().mul(2.0), 1.0, 1.0))
-const bottomVec = vec2(noiseFactor.x, float(0.8).sub(timerGlobal().mul(0.2)))
+//Main Branch
+const timer = timerGlobal()
 const thickness = float(0.01)
-const segment = sdfSegment({ p: pixelCoords, a: topVec, b: bottomVec }).sub(
-  thickness
-)
+const noiseFactor = simplexNoise3d(vec3(timer.mul(2.0), 1.0, 1.0))
 
-//const d = opUnion({ a: circle, b: segment })
-//const d = opIntersection({ a: circle, b: segment })
-//const d = opDifference({ a: circle, b: segment })
-const d = opDifference({ a: segment, b: circle })
+const mainStartY = float(0.8)
+const mainEndY = float(0.8).sub(timer.mul(0.2))
+const clampedGrowth = clamp(mainEndY, -0.7, 0.8)
+
+const mainStartPos = vec2(0, mainStartY)
+const mainEndPos = vec2(0, clampedGrowth)
+
+const mainBranch = sdfSegment({
+  p: pixelCoords,
+  a: mainStartPos,
+  b: mainEndPos
+}).sub(thickness)
+
+// Branch off of the Segment
+const branchStartY = float(0.5)
+const branchActive = float(1.0).sub(step(branchStartY, mainEndY)) // 0 if inActive, 1 if active
+
+const branchStartPos = vec2(0, branchStartY)
+const branchGrowthTime = timer.mul(0.1)
+
+const growthT = clamp(branchActive.mul(branchGrowthTime), 0.0, 1.0)
+
+const branchedX = mix(0.0, 0.8, growthT) // For X, we want it to move from 0 to 0.8
+const branchedY = mix(branchStartY, 0.3, growthT) // For Y, we want it to move downward from 0.5 to say 0.3
+const branchEndPos = vec2(branchedX, branchedY)
+
+const firstBranch = sdfSegment({
+  p: pixelCoords,
+  a: branchStartPos,
+  b: branchEndPos
+}).sub(thickness)
+
+const tree = opUnion({ a: mainBranch, b: firstBranch })
+const d = opDifference({ a: tree, b: circle })
+
 let allShapes = mix(RED.mul(0.5), WHITE, smoothstep(0.0, 0.001, d))
 let mixShapes = mix(BLUE, allShapes, smoothstep(-0.09, 0.001, d))
 
