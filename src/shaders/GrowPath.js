@@ -1,38 +1,21 @@
 import * as THREE from 'three'
 import {
-  MeshBasicNodeMaterial,
-  MeshStandardNodeMaterial,
-  uniform,
-  color,
-  vec2,
-  vec3,
-  vec4,
-  modelWorldMatrix,
-  timerLocal,
-  positionLocal,
-  smoothstep,
-  mix,
-  float,
-  varying,
-  mul,
-  sin,
   clamp,
   dot,
-  cos,
-  uv,
-  timerGlobal,
-  triplanarTexture,
-  texture,
-  toVar,
-  step,
-  abs,
-  If,
+  float,
   Fn,
-  min,
-  max,
   length,
-  screenSize,
-  screenCoordinate
+  max,
+  MeshBasicNodeMaterial,
+  min,
+  mix,
+  select,
+  smoothstep,
+  step,
+  timerGlobal,
+  uv,
+  vec2,
+  vec3
 } from 'three/tsl'
 import { simplexNoise3d } from '../utils/simplexNoise3d.js'
 
@@ -83,9 +66,10 @@ const circle = sdfCircle({ pos: pixelCoords, r: 1 })
 const timer = timerGlobal()
 const thickness = float(0.01)
 const noiseFactor = simplexNoise3d(vec3(timer.mul(2.0), 1.0, 1.0))
+const branchGrowthTime = timer.mul(0.2)
 
 const mainStartY = float(0.8)
-const mainEndY = float(0.8).sub(timer.mul(0.2))
+const mainEndY = float(0.8).sub(branchGrowthTime)
 const clampedGrowth = clamp(mainEndY, -0.7, 0.8)
 
 const mainStartPos = vec2(0, mainStartY)
@@ -102,8 +86,6 @@ const branchStartY = float(0.5)
 const branchActive = float(1.0).sub(step(branchStartY, mainEndY)) // 0 if inActive, 1 if active
 
 const branchStartPos = vec2(0, branchStartY)
-const branchGrowthTime = timer.mul(0.1)
-
 const growthT = clamp(branchActive.mul(branchGrowthTime), 0.0, 1.0)
 
 const branchedX = mix(0.0, 0.8, growthT) // For X, we want it to move from 0 to 0.8
@@ -116,7 +98,11 @@ const firstBranch = sdfSegment({
   b: branchEndPos
 }).sub(thickness)
 
-const tree = opUnion({ a: mainBranch, b: firstBranch })
+const tree = select(
+  branchActive.greaterThan(0.5),
+  opUnion({ a: mainBranch, b: firstBranch }),
+  mainBranch
+)
 const d = opDifference({ a: tree, b: circle })
 
 let allShapes = mix(RED.mul(0.5), WHITE, smoothstep(0.0, 0.001, d))
