@@ -29,6 +29,7 @@ import warpedSphereMesh from './shaders/WarpedSphere.js'
 import starsMesh from './shaders/Stars.js'
 import RaymarchMesh from './shaders/Raymarch.js'
 import GrowPathMesh from './shaders/GrowPath.js'
+import GrowPathMesh2 from './shaders/GrowPath2.js'
 
 // Scene, Camera, Renderer
 const scene = new Scene()
@@ -58,7 +59,8 @@ renderer.setClearColor('#19191f')
 //scene.add(warpedSphereMesh)
 //scene.add(starsMesh)
 //scene.add(RaymarchMesh)
-scene.add(GrowPathMesh)
+//scene.add(GrowPathMesh)
+scene.add(GrowPathMesh2)
 
 // Camera
 camera.position.z = 75
