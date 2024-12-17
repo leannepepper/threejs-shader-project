@@ -19,7 +19,8 @@ import {
   pow,
   normalize,
   sqrt,
-  abs
+  abs,
+  cos
 } from 'three/tsl'
 import { simplexNoise3d } from '../utils/simplexNoise3d.js'
 
@@ -55,18 +56,18 @@ const sdfSegment = Fn(({ p, a, b }) => {
  * @returns {vec2} outQ
  */
 const sdfBezier = Fn(({ p, v0, v1, v2 }) => {
-  const i = v0.sub(v2).toVar()
-  const j = v2.sub(v1).toVar()
-  const k = v1.sub(v0).toVar()
-  const w = j.sub(k).toVar()
+  const i = v0.sub(v2)
+  const j = v2.sub(v1)
+  const k = v1.sub(v0)
+  const w = j.sub(k)
 
-  v0.assign(v0.sub(p))
-  v1.assign(v1.sub(p))
-  v2.assign(v2.sub(p))
+  const v0_1 = v0.sub(p)
+  const v1_1 = v1.sub(p)
+  const v2_1 = v2.sub(p)
 
-  const x = dot(v0, v2)
-  const y = dot(v1, v0)
-  const z = dot(v2, v1)
+  const x = dot(v0_1, v2_1)
+  const y = dot(v1_1, v0_1)
+  const z = dot(v2_1, v1_1)
 
   const s = vec2(2.0)
     .mul(y.mul(j).add(z.mul(k)))
@@ -84,7 +85,7 @@ const sdfBezier = Fn(({ p, v0, v1, v2 }) => {
   )
 
   const d = v0.add(t.mul(k).add(k).add(t.mul(w)))
-  return length(d.add(p))
+  return d.add(p)
 })
 
 // Op Union
@@ -104,23 +105,22 @@ const opDifference = Fn(({ a, b }) => {
 
 const resolution = window.innerWidth / window.innerHeight
 const pixelCoords = uvVar.sub(vec2(0.5)).mul(resolution).toVar()
-const timer = clamp(timerGlobal(), 0.0, 1.0)
+const timer = timerGlobal()
+const clampTimer = clamp(timerGlobal(), 0.0, 1.0)
 
 // circle
 const circle = sdfCircle({ pos: pixelCoords, r: 1 })
 
 //Bezier Branch
-const v0 = vec2(-0.5, -0.5)
-const v1 = vec2(0.0, 1.0)
-const v2 = vec2(0.5, -0.5)
+const v0 = vec2(-0.5, 0.5)
+const v1 = vec2(0.0, -0.5)
+const v2 = vec2(0.5, 0.5)
+
 const bezier = sdfBezier({ p: pixelCoords, v0, v1, v2 })
 
-//Main Branch
-const mainBranch = opUnion({ a: circle, b: bezier })
+const d = opDifference({ a: bezier, b: circle })
 
-const tree = mainBranch
-const d = opDifference({ a: tree, b: circle })
-let mixShapes = mix(BLACK, WHITE, smoothstep(0.0, 0.001, d))
+let mixShapes = mix(BLUE, WHITE, smoothstep(0.0, 0.01, d))
 
 material.colorNode = mixShapes
 
