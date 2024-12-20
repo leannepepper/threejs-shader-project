@@ -20,7 +20,8 @@ import {
   normalize,
   sqrt,
   abs,
-  cos
+  cos,
+  sin
 } from 'three/tsl'
 import { simplexNoise3d } from '../utils/simplexNoise3d.js'
 
@@ -112,15 +113,13 @@ const clampTimer = clamp(timerGlobal(), 0.0, 1.0)
 const circle = sdfCircle({ pos: pixelCoords, r: 1 })
 
 //Bezier Branch
-const v0 = vec2(-0.5, 0.5)
-const v1 = vec2(0.0, -0.5)
-const v2 = vec2(0.5, 0.5)
+const v0 = vec2(0.25, 0.0)
+const v1 = vec2(0.0, 0.0) // control point
+const v2 = vec2(0.25, 0.0)
 
 const bezier = sdfBezier({ p: pixelCoords, v0, v1, v2 })
 
-const d = opDifference({ a: bezier, b: circle })
-
-let mixShapes = mix(BLUE, WHITE, smoothstep(0.0, 0.01, d))
+let mixShapes = mix(BLACK, WHITE, smoothstep(0.0, 0.01, bezier))
 
 material.colorNode = mixShapes
 
