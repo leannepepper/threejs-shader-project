@@ -59,8 +59,8 @@ renderer.setClearColor('#19191f')
 //scene.add(warpedSphereMesh)
 //scene.add(starsMesh)
 //scene.add(RaymarchMesh)
-//scene.add(GrowPathMesh)
-scene.add(GrowPathMesh2)
+scene.add(GrowPathMesh)
+//scene.add(GrowPathMesh2)
 
 // Camera
 camera.position.z = 75

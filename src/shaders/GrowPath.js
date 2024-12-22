@@ -38,25 +38,6 @@ const sdfCircle = Fn(({ pos, r }) => {
   return length(pos).sub(r)
 })
 
-//SDF Segment
-const sdfSegment = Fn(({ p, a, b }) => {
-  const pa = p.sub(a)
-  const ba = b.sub(a)
-  const h = clamp(dot(pa, ba).div(dot(ba, ba)), 0.0, 1.0)
-  return length(pa.sub(ba.mul(h)))
-})
-
-// SDF Vesica
-const sdfVesica = Fn(({ p, r, d }) => {
-  p = abs(p)
-  const b = sqrt(r.mul(r).sub(d.mul(d)))
-  return select(
-    p.y.sub(b).mul(d).greaterThan(p.x.mul(b)),
-    length(p.sub(vec2(0.0, b))),
-    length(p.sub(vec2(float(d).mul(-1), 0.0))).sub(r)
-  )
-})
-
 // Op Union
 const opUnion = Fn(({ a, b }) => {
   return min(a, b)
@@ -77,6 +58,22 @@ const easeOutCubic = Fn(({ t }) => {
   return float(1.0).sub(pow(float(1.0).sub(t), 3.0))
 })
 
+//SDF Segment
+const sdfSegment = Fn(({ p, a, b }) => {
+  const pa = p.sub(a)
+  const ba = b.sub(a)
+  const h = clamp(dot(pa, ba).div(dot(ba, ba)), 0.0, 1.0)
+  return length(pa.sub(ba.mul(h)))
+})
+
+// Given a set of points, form a polyline and return min distance
+const sdfPolyline = Fn(({ p, p0, p1, p2, p3 }) => {
+  const d0 = sdfSegment({ p, a: p0, b: p1 })
+  const d1 = sdfSegment({ p, a: p1, b: p2 })
+  const d2 = sdfSegment({ p, a: p2, b: p3 })
+  return min(d0, min(d1, d2))
+})
+
 const resolution = window.innerWidth / window.innerHeight
 const pixelCoords = uvVar.sub(vec2(0.5)).mul(resolution).toVar()
 
@@ -84,9 +81,9 @@ const pixelCoords = uvVar.sub(vec2(0.5)).mul(resolution).toVar()
 const circle = sdfCircle({ pos: pixelCoords, r: 1 })
 
 //Main Branch
-const timer = clamp(timerGlobal(), 0.0, 1.0)
+const timer = clamp(timerGlobal(0.5), 0.0, 1.0)
 const thickness = float(0.01)
-const noiseFactor = simplexNoise3d(vec3(timer.mul(2.0), 1.0, 1.0))
+const noiseFactor = simplexNoise3d(vec3(timer.mul(0.5), 1.0, 1.0))
 const branchGrowthTime = easeOutCubic({ t: timer })
 
 const mainStartY = float(0.8)
@@ -118,12 +115,30 @@ const firstBranch = sdfSegment({
   b: branchEndPos
 }).sub(thickness)
 
-const tree = select(
-  branchActive.greaterThan(0.5),
-  opUnion({ a: mainBranch, b: firstBranch }),
-  mainBranch
-)
-const d = opDifference({ a: tree, b: circle })
+// Polyline Tree
+const treePoints = [
+  vec2(0.0, mix(0.0, float(0.2).mul(noiseFactor), branchGrowthTime)),
+  vec2(0.2, mix(0.2, float(0.4).mul(noiseFactor), branchGrowthTime)),
+  vec2(0.4, mix(0.4, float(0.6).mul(noiseFactor), branchGrowthTime)),
+  vec2(0.6, mix(0.6, float(0.8), branchGrowthTime)),
+  vec2(0.8, mix(0.8, float(1.0), branchGrowthTime)),
+  vec2(1.0, mix(1.0, float(1.2), branchGrowthTime))
+]
+
+const treeBranch = sdfPolyline({
+  p: pixelCoords,
+  p0: treePoints[0],
+  p1: treePoints[1],
+  p2: treePoints[2],
+  p3: treePoints[3]
+}).sub(thickness)
+
+// const tree = select(
+//   branchActive.greaterThan(0.5),
+//   opUnion({ a: mainBranch, b: firstBranch }),
+//   mainBranch
+// )
+const d = opDifference({ a: treeBranch, b: circle })
 
 let mixShapes = mix(BLACK, WHITE, smoothstep(0.0, 0.001, d))
 
