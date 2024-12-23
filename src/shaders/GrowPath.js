@@ -133,12 +133,12 @@ const treeBranch = sdfPolyline({
   p3: treePoints[3]
 }).sub(thickness)
 
-// const tree = select(
-//   branchActive.greaterThan(0.5),
-//   opUnion({ a: mainBranch, b: firstBranch }),
-//   mainBranch
-// )
-const d = opDifference({ a: treeBranch, b: circle })
+const tree = select(
+  branchActive.greaterThan(0.5),
+  opUnion({ a: mainBranch, b: treeBranch }),
+  mainBranch
+)
+const d = opDifference({ a: tree, b: circle })
 
 let mixShapes = mix(BLACK, WHITE, smoothstep(0.0, 0.001, d))
 
