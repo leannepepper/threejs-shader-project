@@ -28,9 +28,9 @@ import gridMesh from './shaders/Grid.js'
 import warpedSphereMesh from './shaders/WarpedSphere.js'
 import starsMesh from './shaders/Stars.js'
 import RaymarchMesh from './shaders/Raymarch.js'
-import GrowPathMesh from './shaders/GrowPath.js'
+//import GrowPathMesh from './shaders/GrowPath.js'
 import GrowPathMesh2 from './shaders/GrowPath2.js'
-import FloraTextMesh from './shaders/FloraText.js'
+import { FloraTextMesh, GrowPathMesh } from './shaders/FloraText.js'
 
 // Scene, Camera, Renderer
 const scene = new Scene()
@@ -46,7 +46,9 @@ const canvas = document.querySelector('canvas.canvas')
 
 const renderer = new WebGPURenderer({
   canvas: canvas,
-  antialias: true
+  antialias: true,
+  stencil: true,
+  alpha: true
 })
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -63,6 +65,7 @@ renderer.setClearColor('#19191f')
 //scene.add(GrowPathMesh)
 //scene.add(GrowPathMesh2)
 scene.add(FloraTextMesh)
+scene.add(GrowPathMesh)
 
 // Camera
 camera.position.z = 75
