@@ -26,8 +26,19 @@ import {
 } from 'three/tsl'
 import { simplexNoise3d } from '../utils/simplexNoise3d.js'
 const BLUE = vec3(0.0, 0.0, 1.0)
+const BG_COLOR = vec3(0.02, 0.02, 0.02) //#19191f
 const RED = vec3(1.0, 0.0, 0.0)
 const WHITE = vec3(1.0, 0.9, 0.9)
+
+// Op Difference
+const opDifference = Fn(({ a, b }) => {
+  return max(a.mul(-1.0), b)
+})
+
+// Op Union
+const opUnion = Fn(({ a, b }) => {
+  return min(a, b)
+})
 
 // Easing Functions
 const easeOutCubic = Fn(({ t }) => {
@@ -52,7 +63,7 @@ const sdfPolyline = Fn(({ p, p0, p1, p2, p3 }) => {
 
 /** Node material setup */
 const material = new MeshBasicNodeMaterial()
-material.stencilWrite = true // or false if you just want to read
+material.stencilWrite = true
 material.stencilRef = 1
 material.stencilFunc = THREE.EqualStencilFunc
 material.stencilFail = THREE.KeepStencilOp
@@ -61,15 +72,15 @@ material.stencilZPass = THREE.KeepStencilOp
 
 const resolution = window.innerWidth / window.innerHeight
 const pixelCoords = uv().sub(vec2(0.5)).mul(resolution).toVar()
-const thickness = float(0.1)
+const thickness = float(0.01)
 
 //Main Branch
-const timer = sin(timerGlobal())
+const timer = timerGlobal()
 const noiseFactor = simplexNoise3d(vec3(timer.mul(0.5), 1.0, 1.0))
 const branchGrowthTime = easeOutCubic({ t: timer })
 
-const mainStartY = float(0.8)
-const mainEndY = float(-0.5).sub(branchGrowthTime)
+const mainStartY = float(1.0)
+const mainEndY = float(0.0).sub(branchGrowthTime)
 let clampedGrowth = clamp(mainEndY, -1.7, 0.8)
 
 const mainStartPos = vec3(0, mainStartY, 1.0)
@@ -81,7 +92,64 @@ const root = sdfSegment({
   b: mainEndPos
 }).sub(thickness)
 
-material.colorNode = mix(WHITE, RED, smoothstep(0.0, 0.001, root))
+/**
+ * Randomly Generate Branches
+ */
+const getClampedVerticalGrowth = Fn(({ pos }) => {
+  const mainEndY = pos.sub(branchGrowthTime)
+  return clamp(mainEndY, -1.7, pos)
+})
+
+const getClampedHorizontalGrowth = Fn(({ pos }) => {
+  const mainEndX = pos.sub(branchGrowthTime)
+  return clamp(mainEndX, -1.0, pos)
+})
+
+const generateBranches = () => {
+  const branches = []
+  const treePoints = [
+    vec2(0.0, 0.5),
+    vec2(0.2, 0.4),
+    vec2(0.4, 0.3),
+    vec2(0.6, 0.0),
+    // second branch
+    vec2(0.0, 0.5),
+    vec2(-0.1, 0.4),
+    vec2(-0.2, 0.3),
+    vec2(-0.6, 0.0)
+  ]
+
+  const treeBranch = sdfPolyline({
+    p: pixelCoords,
+    p0: treePoints[0],
+    p1: treePoints[1],
+    p2: treePoints[2],
+    p3: treePoints[3]
+  }).sub(thickness)
+
+  const treeBranch2 = sdfPolyline({
+    p: pixelCoords,
+    p0: treePoints[4],
+    p1: treePoints[5],
+    p2: treePoints[6],
+    p3: treePoints[7]
+  }).sub(thickness)
+
+  branches.push(treeBranch)
+  branches.push(treeBranch2)
+
+  return branches
+}
+
+const mergeAllBranches = ({ root, branches }) => {
+  return branches.reduce((acc, branch) => {
+    return opUnion({ a: acc, b: branch })
+  }, root)
+}
+
+const branches = generateBranches()
+const roots = mergeAllBranches({ root: root, branches: branches })
+material.colorNode = mix(BG_COLOR, WHITE, smoothstep(0.0, 0.001, roots))
 
 /**
  * FONT GEOMETRY
