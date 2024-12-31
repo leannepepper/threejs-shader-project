@@ -1,12 +1,6 @@
 import * as THREE from 'three'
-import {
-  MeshBasicNodeMaterial,
-  uniform,
-  color,
-  vec4,
-  uv,
-  texture
-} from 'three/tsl'
+import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { uniform, color, vec4, uv, texture } from 'three/tsl'
 
 const material = new MeshBasicNodeMaterial()
 const tint = uniform(color('#ff6088'))

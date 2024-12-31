@@ -1,7 +1,5 @@
 import * as THREE from 'three'
 import {
-  MeshBasicNodeMaterial,
-  MeshStandardNodeMaterial,
   uniform,
   color,
   vec2,
@@ -35,6 +33,7 @@ import {
   remap,
   normalLocal
 } from 'three/tsl'
+import { MeshBasicNodeMaterial } from 'three/webgpu'
 
 const material = new MeshBasicNodeMaterial()
 const uvVar = uv()

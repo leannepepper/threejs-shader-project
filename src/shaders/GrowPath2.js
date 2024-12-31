@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { MeshBasicNodeMaterial } from 'three/webgpu'
 import {
   clamp,
   dot,
@@ -6,7 +7,6 @@ import {
   Fn,
   length,
   max,
-  MeshBasicNodeMaterial,
   min,
   mix,
   select,

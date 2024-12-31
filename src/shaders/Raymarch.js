@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { MeshBasicNodeMaterial } from 'three/webgpu'
 import {
   abs,
   Break,
@@ -9,7 +10,6 @@ import {
   length,
   Loop,
   max,
-  MeshBasicNodeMaterial,
   min,
   normalize,
   saturate,

@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
+import { MeshBasicNodeMaterial } from 'three/webgpu'
 import {
   clamp,
   dot,
@@ -8,7 +9,6 @@ import {
   Fn,
   length,
   max,
-  MeshBasicNodeMaterial,
   min,
   mix,
   select,
