@@ -22,7 +22,8 @@ import {
   sin,
   normalize,
   sqrt,
-  abs
+  abs,
+  rand
 } from 'three/tsl'
 import { simplexNoise3d } from '../utils/simplexNoise3d.js'
 const BLUE = vec3(0.0, 0.0, 1.0)
@@ -54,18 +55,22 @@ const sdfSegment = Fn(({ p, a, b }) => {
 })
 
 // Given a set of points, form a polyline and return min distance
-const sdfPolyline = Fn(({ p, p0, p1, p2, p3 }) => {
-  const d0 = sdfSegment({ p, a: p0, b: p1 })
-  const d1 = sdfSegment({ p, a: p1, b: p2 })
-  const d2 = sdfSegment({ p, a: p2, b: p3 })
-  return min(d0, min(d1, d2))
-})
+const sdfPolyline = ({ p, points }) => {
+  let distanceNode = sdfSegment({ p, a: points[0], b: points[1] })
+
+  for (let i = 1; i < points.length - 1; i++) {
+    const segDist = sdfSegment({ p, a: points[i], b: points[i + 1] })
+    distanceNode = min(distanceNode, segDist)
+  }
+
+  return distanceNode
+}
 
 /** Node material setup */
 const material = new MeshBasicNodeMaterial()
 material.stencilWrite = true
 material.stencilRef = 1
-material.stencilFunc = THREE.EqualStencilFunc
+// material.stencilFunc = THREE.EqualStencilFunc
 material.stencilFail = THREE.KeepStencilOp
 material.stencilZFail = THREE.KeepStencilOp
 material.stencilZPass = THREE.KeepStencilOp
@@ -95,48 +100,38 @@ const root = sdfSegment({
 /**
  * Randomly Generate Branches
  */
-const getClampedVerticalGrowth = Fn(({ pos }) => {
-  const mainEndY = pos.sub(branchGrowthTime)
-  return clamp(mainEndY, -1.7, pos)
-})
-
-const getClampedHorizontalGrowth = Fn(({ pos }) => {
-  const mainEndX = pos.sub(branchGrowthTime)
-  return clamp(mainEndX, -1.0, pos)
-})
 
 const generateBranches = () => {
+  function genBranch () {
+    const startX = 0.0
+    const startY = 0.5
+
+    // Let each root travel further horizontally, randomly
+    const endX = startX + (Math.random() - 0.5) * 1.2
+
+    // Let each root go down by 0.4..0.8 units, so it ends between 0.2..-0.0
+    const downwardDist = 0.4 + Math.random() * 0.4
+    const endY = startY - downwardDist
+
+    // Convert those JS numbers into TSL nodes:
+    const p0 = vec2(float(startX), float(startY))
+    const p1 = vec2(float((startX + endX) * 0.5), float((startY + endY) * 0.5))
+    const p2 = vec2(float((startX + endX) * 0.8), float((startY + endY) * 0.8))
+    const p3 = vec2(float(endX), float(endY))
+
+    // Build your TSL node for the polyline
+    const branch = sdfPolyline({
+      p: pixelCoords,
+      points: [p0, p1, p2, p3]
+    }).sub(thickness)
+
+    return branch
+  }
+
   const branches = []
-  const treePoints = [
-    vec2(0.0, 0.5),
-    vec2(0.2, 0.4),
-    vec2(0.4, 0.3),
-    vec2(0.6, 0.0),
-    // second branch
-    vec2(0.0, 0.5),
-    vec2(-0.1, 0.4),
-    vec2(-0.2, 0.3),
-    vec2(-0.6, 0.0)
-  ]
-
-  const treeBranch = sdfPolyline({
-    p: pixelCoords,
-    p0: treePoints[0],
-    p1: treePoints[1],
-    p2: treePoints[2],
-    p3: treePoints[3]
-  }).sub(thickness)
-
-  const treeBranch2 = sdfPolyline({
-    p: pixelCoords,
-    p0: treePoints[4],
-    p1: treePoints[5],
-    p2: treePoints[6],
-    p3: treePoints[7]
-  }).sub(thickness)
-
-  branches.push(treeBranch)
-  branches.push(treeBranch2)
+  for (let i = 0; i < 5; i++) {
+    branches.push(genBranch())
+  }
 
   return branches
 }
@@ -160,7 +155,7 @@ function loadFont (url) {
     loader.load(url, resolve, undefined, reject)
   })
 }
-const font = await loadFont('./fonts/manrope-regular-normal-200.json')
+const font = await loadFont('./fonts/Assistant/Assistant_Bold.json')
 
 const config = {
   font,
