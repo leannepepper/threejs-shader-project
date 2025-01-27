@@ -70,7 +70,7 @@ const sdfPolyline = ({ p, points }) => {
 const material = new MeshBasicNodeMaterial()
 material.stencilWrite = true
 material.stencilRef = 1
-// material.stencilFunc = THREE.EqualStencilFunc
+material.stencilFunc = THREE.EqualStencilFunc
 material.stencilFail = THREE.KeepStencilOp
 material.stencilZFail = THREE.KeepStencilOp
 material.stencilZPass = THREE.KeepStencilOp
@@ -107,17 +107,23 @@ const generateBranches = () => {
     const startY = 0.5
 
     // Let each root travel further horizontally, randomly
-    const endX = startX + (Math.random() - 0.5) * 1.2
+    const endX = startX + (Math.random() - 0.5) * 1.0
 
     // Let each root go down by 0.4..0.8 units, so it ends between 0.2..-0.0
-    const downwardDist = 0.4 + Math.random() * 0.4
+    const downwardDist = 0.5 + Math.random() * 0.4
     const endY = startY - downwardDist
 
     // Convert those JS numbers into TSL nodes:
     const p0 = vec2(float(startX), float(startY))
-    const p1 = vec2(float((startX + endX) * 0.5), float((startY + endY) * 0.5))
-    const p2 = vec2(float((startX + endX) * 0.8), float((startY + endY) * 0.8))
-    const p3 = vec2(float(endX), float(endY))
+    const p1 = vec2(
+      float((startX + endX) * Math.random()),
+      float((startY + endY) * Math.random())
+    )
+    const p2 = vec2(
+      float((startX + endX) * (0.4 + Math.random())),
+      float((startY + endY) * (0.4 + Math.random()))
+    )
+    const p3 = vec2(float(endX * Math.random()), float(endY * Math.random()))
 
     // Build your TSL node for the polyline
     const branch = sdfPolyline({
@@ -129,7 +135,7 @@ const generateBranches = () => {
   }
 
   const branches = []
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 10; i++) {
     branches.push(genBranch())
   }
 

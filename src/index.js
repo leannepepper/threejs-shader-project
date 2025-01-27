@@ -11,6 +11,7 @@ import starsMesh from './shaders/Stars.js'
 import RaymarchMesh from './shaders/Raymarch.js'
 //import GrowPathMesh from './shaders/GrowPath.js'
 import GrowPathMesh2 from './shaders/GrowPath2.js'
+import LightBrightMesh from './shaders/LightBright.js'
 import { FloraTextMesh, GrowPathMesh } from './shaders/FloraText.js'
 
 // Scene, Camera, Renderer
@@ -45,8 +46,9 @@ renderer.setClearColor('#19191f')
 //scene.add(RaymarchMesh)
 //scene.add(GrowPathMesh)
 //scene.add(GrowPathMesh2)
-scene.add(FloraTextMesh)
-scene.add(GrowPathMesh)
+//scene.add(FloraTextMesh)
+//scene.add(GrowPathMesh)
+scene.add(LightBrightMesh)
 
 // Camera
 camera.position.z = 75
