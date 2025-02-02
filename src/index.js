@@ -14,8 +14,8 @@ import GrowPathMesh2 from './shaders/GrowPath2.js'
 import { FloraTextMesh, GrowPathMesh } from './shaders/FloraText.js'
 import {
   LightBrightMesh,
-  selectedCol,
-  selectedRow
+  GRID_SIZE,
+  selectedTexture
 } from './shaders/LightBright.js'
 
 // Scene, Camera, Renderer
@@ -60,12 +60,12 @@ camera.position.y = 2
 camera.lookAt(0, 0, 0)
 
 // Controls
-const cameraControls = new OrbitControls(camera, canvas)
-cameraControls.enableDamping = true
+// const cameraControls = new OrbitControls(camera, canvas)
+// cameraControls.enableDamping = true
 
 // Animation Loop
 function animate () {
-  cameraControls.update()
+  //cameraControls.update()
 
   window.requestAnimationFrame(animate)
   renderer.renderAsync(scene, camera)
@@ -78,27 +78,57 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix()
   renderer.setSize(window.innerWidth, window.innerHeight)
 })
+// Track dragging state
+let isDragging = false
 
-function onPointerDown (event) {
+// Update mouse position for raycasting
+function updateMousePosition (event) {
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
+}
 
+// Toggle light via raycasting
+function toggleLight (event) {
   raycaster.setFromCamera(pointer, camera)
   const intersects = raycaster.intersectObject(LightBrightMesh)
   if (intersects.length > 0) {
     const uv = intersects[0].uv
 
-    const stX = uv.x * 20
-    const stY = uv.y * 20
+    const stX = uv.x * GRID_SIZE
+    const stY = uv.y * GRID_SIZE
     const s = Math.sqrt(3) / 2
 
     const row = Math.floor(stY / s)
     const parity = row % 2
     const col = Math.floor(stX - parity * 0.5)
 
-    selectedRow.value = row
-    selectedCol.value = col
+    const data = selectedTexture.image.data
+    const index = 4 * (col + row * GRID_SIZE)
+    data[index] = 255
+    data[index + 1] = 0
+    data[index + 2] = 0
+    data[index + 3] = 255
+    selectedTexture.needsUpdate = true
   }
 }
 
+function onPointerDown (event) {
+  isDragging = true
+  updateMousePosition(event)
+  toggleLight()
+}
+
+function onPointerMove (event) {
+  if (isDragging) {
+    updateMousePosition(event)
+    toggleLight()
+  }
+}
+
+function onPointerUp () {
+  isDragging = false
+}
+
 window.addEventListener('pointerdown', onPointerDown)
+window.addEventListener('pointermove', onPointerMove)
+window.addEventListener('pointerup', onPointerUp)

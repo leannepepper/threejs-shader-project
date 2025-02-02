@@ -37,6 +37,19 @@ import {
   mod
 } from 'three/tsl'
 
+export const GRID_SIZE = 50.0
+
+/** Set up data texture to hold selected state information */
+const data = new Uint8Array(GRID_SIZE * GRID_SIZE * 4) // RGBA, each pixel = 4 channels
+export const selectedTexture = new THREE.DataTexture(
+  data,
+  GRID_SIZE,
+  GRID_SIZE,
+  THREE.RGBAFormat
+)
+selectedTexture.needsUpdate = true
+
+/** Create Mesh with Honeycomb Grid and Lights */
 const material = new MeshBasicNodeMaterial()
 
 export const selectedRow = uniform(5.0)
@@ -47,7 +60,7 @@ const black = color('#000000')
 const highlight = color('#FF0000')
 
 const uvVar = uv()
-const st = vec2(uvVar.mul(20.0))
+const st = vec2(uvVar.mul(GRID_SIZE))
 
 const sqrt3 = float(Math.sqrt(3))
 const s = sqrt3.div(2.0)
@@ -65,17 +78,11 @@ const dist = length(diff)
 
 const circleMask = smoothstep(0.0, 0.05, float(0.4).sub(dist))
 
-const rowDiff = abs(rowIndex.sub(selectedRow))
-const colDiff = abs(colIndex.sub(selectedCol))
+const u = colIndex.add(0.5).div(float(GRID_SIZE))
+const v = rowIndex.add(0.5).div(float(GRID_SIZE))
 
-// step(0.5, rowDiff) is 1 if rowDiff >= 0.5, else 0
-// => 1 - step(...) is 0 if rowDiff >= 0.5, else 1
-// So rowMatch = 1 only if rowDiff < 0.5 => i.e. rowIndex = selectedRow
-const rowMatch = float(1.0).sub(step(0.5, rowDiff))
-const colMatch = float(1.0).sub(step(0.5, colDiff))
-
-// isSelected = 1 if rowIndex and colIndex match exactly
-const isSelected = rowMatch.mul(colMatch)
+const texSample = texture(selectedTexture, vec2(u, v))
+const isSelected = texSample.r
 
 const baseColor = mix(black, shapeColor, circleMask)
 const selectedColor = mix(baseColor, highlight, isSelected)
