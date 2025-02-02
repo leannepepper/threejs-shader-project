@@ -11,19 +11,23 @@ import starsMesh from './shaders/Stars.js'
 import RaymarchMesh from './shaders/Raymarch.js'
 //import GrowPathMesh from './shaders/GrowPath.js'
 import GrowPathMesh2 from './shaders/GrowPath2.js'
-import LightBrightMesh from './shaders/LightBright.js'
 import { FloraTextMesh, GrowPathMesh } from './shaders/FloraText.js'
+import {
+  LightBrightMesh,
+  selectedCol,
+  selectedRow
+} from './shaders/LightBright.js'
 
 // Scene, Camera, Renderer
 const scene = new THREE.Scene()
+const raycaster = new THREE.Raycaster()
+const pointer = new THREE.Vector2()
 const camera = new THREE.PerspectiveCamera(
   15,
   window.innerWidth / window.innerHeight,
   1,
   100
 )
-
-// Canvas
 const canvas = document.querySelector('canvas.canvas')
 
 const renderer = new WebGPURenderer({
@@ -69,9 +73,32 @@ function animate () {
 
 animate()
 
-//Handle Window Resize
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
   renderer.setSize(window.innerWidth, window.innerHeight)
 })
+
+function onPointerDown (event) {
+  pointer.x = (event.clientX / window.innerWidth) * 2 - 1
+  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
+
+  raycaster.setFromCamera(pointer, camera)
+  const intersects = raycaster.intersectObject(LightBrightMesh)
+  if (intersects.length > 0) {
+    const uv = intersects[0].uv
+
+    const stX = uv.x * 20
+    const stY = uv.y * 20
+    const s = Math.sqrt(3) / 2
+
+    const row = Math.floor(stY / s)
+    const parity = row % 2
+    const col = Math.floor(stX - parity * 0.5)
+
+    selectedRow.value = row
+    selectedCol.value = col
+  }
+}
+
+window.addEventListener('pointerdown', onPointerDown)
