@@ -96,18 +96,24 @@ function toggleLight (event) {
 
     const stX = uv.x * GRID_SIZE
     const stY = uv.y * GRID_SIZE
-    const s = Math.sqrt(3) / 2
+    const s = Math.sqrt(3) / 2 // TODO: Fix index bug
 
-    const row = Math.floor(stY / s)
+    let row = Math.floor(stY / s)
     const parity = row % 2
-    const col = Math.floor(stX - parity * 0.5)
+    let col = Math.floor(stX - parity * 0.5)
 
     const data = selectedTexture.image.data
     const index = 4 * (col + row * GRID_SIZE)
-    data[index] = 255
-    data[index + 1] = 0
-    data[index + 2] = 0
-    data[index + 3] = 255
+
+    const r = Math.floor(Math.random() * 256)
+    const g = Math.floor(Math.random() * 256)
+    const b = Math.floor(Math.random() * 256)
+
+    data[index + 0] = r
+    data[index + 1] = g
+    data[index + 2] = b
+
+    data[index + 3] = data[index + 3] === 0 ? 255 : 0
     selectedTexture.needsUpdate = true
   }
 }

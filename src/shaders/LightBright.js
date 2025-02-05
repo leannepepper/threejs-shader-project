@@ -34,13 +34,14 @@ import {
   dFdy,
   remap,
   floor,
-  mod
+  mod,
+  select
 } from 'three/tsl'
 
-export const GRID_SIZE = 50.0
+export const GRID_SIZE = 40.0
 
 /** Set up data texture to hold selected state information */
-const data = new Uint8Array(GRID_SIZE * GRID_SIZE * 4) // RGBA, each pixel = 4 channels
+const data = new Uint8Array(GRID_SIZE * GRID_SIZE * 4)
 export const selectedTexture = new THREE.DataTexture(
   data,
   GRID_SIZE,
@@ -52,18 +53,14 @@ selectedTexture.needsUpdate = true
 /** Create Mesh with Honeycomb Grid and Lights */
 const material = new MeshBasicNodeMaterial()
 
-export const selectedRow = uniform(5.0)
-export const selectedCol = uniform(10.0)
-
 const shapeColor = color('#19191f')
 const black = color('#000000')
-const highlight = color('#FF0000')
 
 const uvVar = uv()
 const st = vec2(uvVar.mul(GRID_SIZE))
 
 const sqrt3 = float(Math.sqrt(3))
-const s = sqrt3.div(2.0)
+const s = sqrt3.div(2.0) // TODO: Fix index bug
 
 const rowIndex = floor(st.y.div(s))
 const parity = mod(rowIndex, float(2.0))
@@ -82,13 +79,20 @@ const u = colIndex.add(0.5).div(float(GRID_SIZE))
 const v = rowIndex.add(0.5).div(float(GRID_SIZE))
 
 const texSample = texture(selectedTexture, vec2(u, v))
-const isSelected = texSample.r
+const isSelected = texSample.a // use alpha channel to store selected state
+const randomColor = texSample.rgb
+
+// If isSelected is 255 (true), then use the rgb channels to color the cell
+// Otherwise, use the base color
+
+//const highlightColor = select(isSelected.equal(float(255)), texSample.r, 0)
 
 const baseColor = mix(black, shapeColor, circleMask)
-const selectedColor = mix(baseColor, highlight, isSelected)
+const selectedColor = mix(baseColor, randomColor, isSelected)
 const finalColor = mix(baseColor, selectedColor, circleMask)
 
 material.colorNode = finalColor
 
-const geometry = new THREE.PlaneGeometry(20, 20, 100, 100)
+const geometry = new THREE.PlaneGeometry(40, 40, 100, 100)
+
 export const LightBrightMesh = new THREE.Mesh(geometry, material)
