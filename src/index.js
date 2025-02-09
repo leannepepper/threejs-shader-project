@@ -78,14 +78,11 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix()
   renderer.setSize(window.innerWidth, window.innerHeight)
 })
+
 // Track dragging state
 let isDragging = false
-
-// Update mouse position for raycasting
-function updateMousePosition (event) {
-  pointer.x = (event.clientX / window.innerWidth) * 2 - 1
-  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
-}
+let lastHitIndex = -1
+let holdingShift = false
 
 // Toggle light via raycasting
 function toggleLight (event) {
@@ -105,6 +102,10 @@ function toggleLight (event) {
     const data = selectedTexture.image.data
     const index = 4 * (col + row * GRID_SIZE)
 
+    if (index === lastHitIndex) {
+      return
+    }
+
     const r = Math.floor(Math.random() * 256)
     const g = Math.floor(Math.random() * 256)
     const b = Math.floor(Math.random() * 256)
@@ -113,9 +114,17 @@ function toggleLight (event) {
     data[index + 1] = g
     data[index + 2] = b
 
-    data[index + 3] = data[index + 3] === 0 ? 255 : 0
+    data[index + 3] = data[index + 3] = holdingShift ? 0 : 255
     selectedTexture.needsUpdate = true
+
+    lastHitIndex = index
   }
+}
+
+// Update mouse position for raycasting
+function updateMousePosition (event) {
+  pointer.x = (event.clientX / window.innerWidth) * 2 - 1
+  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
 }
 
 function onPointerDown (event) {
@@ -135,6 +144,20 @@ function onPointerUp () {
   isDragging = false
 }
 
+function onKeyDown (event) {
+  if (event.key === 'Shift') {
+    holdingShift = true
+  }
+}
+
+function onKeyUp (event) {
+  if (event.key === 'Shift') {
+    holdingShift = false
+  }
+}
+
 window.addEventListener('pointerdown', onPointerDown)
 window.addEventListener('pointermove', onPointerMove)
 window.addEventListener('pointerup', onPointerUp)
+window.addEventListener('keydown', onKeyDown)
+window.addEventListener('keyup', onKeyUp)
