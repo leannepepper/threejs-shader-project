@@ -1,22 +1,12 @@
 import * as THREE from 'three'
-import { MeshBasicNodeMaterial, WebGPURenderer } from 'three/webgpu'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import ragingSeaMesh from './shaders/ragingSeaMesh.js'
-import textureMesh from './shaders/TextureMesh.js'
-import smoothstepShaderMesh from './shaders/smoothstepMesh.js'
-import circleMesh from './shaders/Circle.js'
-import gridMesh from './shaders/Grid.js'
-import warpedSphereMesh from './shaders/WarpedSphere.js'
-import starsMesh from './shaders/Stars.js'
-import RaymarchMesh from './shaders/Raymarch.js'
-//import GrowPathMesh from './shaders/GrowPath.js'
-import GrowPathMesh2 from './shaders/GrowPath2.js'
-import { FloraTextMesh, GrowPathMesh } from './shaders/FloraText.js'
+import { WebGPURenderer } from 'three/webgpu'
 import {
-  LightBrightMesh,
   GRID_SIZE,
+  LightBrightMesh,
   selectedTexture
-} from './shaders/LightBright.js'
+} from './radianceCascade/LightBright.js'
+import { probeGridRT, probeGridScene } from './radianceCascade/cascade.js'
 
 // Scene, Camera, Renderer
 const scene = new THREE.Scene()
@@ -25,8 +15,8 @@ const pointer = new THREE.Vector2()
 const camera = new THREE.PerspectiveCamera(
   15,
   window.innerWidth / window.innerHeight,
-  1,
-  100
+  0.01,
+  1000
 )
 const canvas = document.querySelector('canvas.canvas')
 
@@ -40,35 +30,28 @@ renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setClearColor('#19191f')
 
-//scene.add(ragingSeaMesh)
-//scene.add(textureMesh)
-//scene.add(smoothstepShaderMesh)
-//scene.add(circleMesh)
-//scene.add(gridMesh)
-//scene.add(warpedSphereMesh)
-//scene.add(starsMesh)
-//scene.add(RaymarchMesh)
-//scene.add(GrowPathMesh)
-//scene.add(GrowPathMesh2)
-//scene.add(FloraTextMesh)
-//scene.add(GrowPathMesh)
 scene.add(LightBrightMesh)
 
 // Camera
-camera.position.z = 75
+camera.position.z = 150
 camera.position.y = 2
 camera.lookAt(0, 0, 0)
 
 // Controls
-// const cameraControls = new OrbitControls(camera, canvas)
-// cameraControls.enableDamping = true
+const cameraControls = new OrbitControls(camera, canvas)
+cameraControls.enableDamping = true
 
 // Animation Loop
 function animate () {
-  //cameraControls.update()
+  cameraControls.update()
 
   window.requestAnimationFrame(animate)
-  renderer.renderAsync(scene, camera)
+
+  // renderer.setRenderTarget(probeGridRT)
+  renderer.renderAsync(probeGridScene, camera)
+  renderer.setRenderTarget(null)
+
+  //renderer.renderAsync(scene, camera)
 }
 
 animate()
