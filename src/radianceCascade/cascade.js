@@ -40,8 +40,9 @@ import {
   clamp,
   dot
 } from 'three/tsl'
-//import { GRID_SIZE } from './LightBright.js'
-const GRID_SIZE = 4.0
+import { GRID_SIZE } from './LightBright.js'
+import Raymarch from './raymarch.js'
+//const GRID_SIZE = 4.0
 
 export const probeGridScene = new THREE.Scene()
 export const probeGridRT = new THREE.WebGLRenderTarget(GRID_SIZE, GRID_SIZE, {
@@ -80,6 +81,7 @@ const numRays = 8
 const baseAngle = float(45.0).mul(Math.PI).div(180.0) // 45 degrees in radians
 let rayVisualization = float(0.0)
 const probeCenter = vec2(0.5, 0.5)
+let colorOfRay = vec3(0.0)
 
 for (let i = 0; i < numRays; i++) {
   const angle = baseAngle.add(
@@ -87,7 +89,7 @@ for (let i = 0; i < numRays; i++) {
   )
   const rayDir = vec2(cos(angle), sin(angle))
 
-  const rayLength = float(0.4)
+  const rayLength = float(0.5)
   const rayEnd = probeCenter.add(rayDir.mul(rayLength))
   const distToRay = sdfSegment({ p: f, a: probeCenter, b: rayEnd })
 
@@ -95,9 +97,21 @@ for (let i = 0; i < numRays; i++) {
   const rayLine = float(1.0).sub(smoothstep(0.0, lineWidth, distToRay))
 
   rayVisualization = max(rayVisualization, rayLine)
+
+  // For each ray, lets ray march and visualize the distance
+  colorOfRay = max(
+    colorOfRay,
+    Raymarch({
+      cameraOrigin: probePos,
+      cameraDirection: rayDir
+    })
+  )
 }
 
-const rayColor = vec3(1.0, 1.0, 0.0).mul(rayVisualization)
+console.log({ colorOfRay })
+
+//const rayColor = vec3(1.0, 1.0, 0.0).mul(rayVisualization)
+const rayColor = colorOfRay.mul(rayVisualization)
 const finalColor = mix(gridColor, rayColor, rayVisualization)
 
 material.colorNode = finalColor

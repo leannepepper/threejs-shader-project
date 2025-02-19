@@ -6,6 +6,7 @@ import {
   LightBrightMesh,
   selectedTexture
 } from './radianceCascade/LightBright.js'
+import RaymarchMesh from './shaders/Raymarch.js'
 import { probeGridRT, probeGridScene } from './radianceCascade/cascade.js'
 
 // Scene, Camera, Renderer
@@ -31,6 +32,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setClearColor('#19191f')
 
 scene.add(LightBrightMesh)
+//scene.add(RaymarchMesh)
 
 // Camera
 camera.position.z = 150
@@ -38,23 +40,24 @@ camera.position.y = 2
 camera.lookAt(0, 0, 0)
 
 // Controls
-const cameraControls = new OrbitControls(camera, canvas)
-cameraControls.enableDamping = true
+// const cameraControls = new OrbitControls(camera, canvas)
+// cameraControls.enableDamping = true
 
 // Animation Loop
 function animate () {
-  cameraControls.update()
+  // cameraControls.update()
 
   window.requestAnimationFrame(animate)
 
-  // renderer.setRenderTarget(probeGridRT)
+  renderer.setRenderTarget(probeGridRT)
   renderer.renderAsync(probeGridScene, camera)
   renderer.setRenderTarget(null)
 
-  //renderer.renderAsync(scene, camera)
+  renderer.renderAsync(scene, camera)
 }
 
 animate()
+selectCells()
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight
@@ -102,6 +105,22 @@ function toggleLight (event) {
 
     lastHitIndex = index
   }
+}
+
+// For debugging purposes, hardcode some cells to be selected
+function selectCells () {
+  const data = selectedTexture.image.data
+  for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+    // Randomly select some cells
+    if (Math.random() < 0.1) {
+      const index = 4 * i
+      data[index + 0] = Math.floor(Math.random() * 256)
+      data[index + 1] = Math.floor(Math.random() * 256)
+      data[index + 2] = 255
+      data[index + 3] = 255
+    }
+  }
+  selectedTexture.needsUpdate = true
 }
 
 // Update mouse position for raycasting

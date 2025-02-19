@@ -1,0 +1,92 @@
+import {
+  Break,
+  float,
+  Fn,
+  If,
+  Loop,
+  texture,
+  vec2,
+  vec3,
+  vec4
+} from 'three/tsl'
+import { selectedTexture, GRID_SIZE } from './LightBright.js'
+
+/**
+ * Calculate the selected state of the grid at the current position
+ * @param {vec2} pos
+ * @returns {vec4} color and dist
+ */
+const calculateSelectedTextLookup = Fn(({ pos }) => {
+  const currentShapeDist = float(0.0).toVar()
+  const sceneForShapes = float(0.0).toVar()
+  const colorForShapes = vec3(0.0).toVar()
+
+  // Convert the position to a grid coordinate
+  const gridPos = pos.mul(float(GRID_SIZE)).toVar()
+  const u = gridPos.x.div(float(GRID_SIZE))
+  const v = gridPos.y.div(float(GRID_SIZE))
+
+  // Use the selectedTexture to look up the state of the grid at the current position
+  const texSample = texture(selectedTexture, vec2(u, v))
+  const isSelected = texSample.a // use alpha channel to store selected state
+  const randomColor = texSample.rgb
+
+  // Set the color and dist based on the selected state
+  If(isSelected.greaterThan(0.5), () => {
+    colorForShapes.assign(vec3(0.0, 1.0, 0.0)) // Green
+    currentShapeDist.assign(0.0) // Selected
+  }).Else(() => {
+    colorForShapes.assign(vec3(1.0, 0.0, 0.0)) // Red
+    currentShapeDist.assign(1.0) // Not selected
+  })
+
+  // I'm unsure how to return both color and dist so return a vec4 with color as x.y.z and dist as w
+  const allData = vec4(colorForShapes, currentShapeDist).toVar()
+
+  return allData
+})
+
+/**
+ * Raymarch function, does the sphere tracing for the world
+ * @param {vec2} cameraOrigin
+ * @param {vec2} cameraDirection
+ * @returns {vec3} color of the pixel
+ */
+const Raymarch = Fn(({ cameraOrigin, cameraDirection }) => {
+  const NUM_STEPS = 256
+  const MAX_DIST = 1000.0
+  const pos = vec2(0.0).toVar()
+  const dist = float(0.0).toVar()
+
+  let exitColor = vec3(1.0, 1.0, 1.0).toVar() // Default color
+
+  Loop({ type: 'int', start: 0, end: NUM_STEPS, condition: '<' }, () => {
+    pos.assign(cameraOrigin.add(cameraDirection.mul(dist))) // calculate the current position along the ray
+    const materialData = calculateSelectedTextLookup({ pos: pos })
+
+    const distToScene = materialData.w
+
+    // Case 1: distToScene < 0, we hit the scene
+    If(distToScene.lessThan(0.0001), () => {
+      exitColor.assign(vec3(materialData.xyz).toVar())
+      Break()
+    })
+
+    dist.assign(dist.add(distToScene))
+    exitColor.assign(vec3(materialData.xyz).toVar())
+
+    // Case 2: dist > MAX_DIST, we missed the scene
+    If(dist.greaterThan(MAX_DIST), () => {
+      exitColor.assign(vec3(0.0, 0.0, 0.0)) // Miss color
+      Break()
+    })
+
+    // Case 3: We haven't hit the scene yet, continue
+  })
+
+  // -- Eventually this will calculate the radiance value for the pixel
+
+  return exitColor
+})
+
+export default Raymarch

@@ -38,7 +38,7 @@ import {
   select
 } from 'three/tsl'
 
-export const GRID_SIZE = 40.0
+export const GRID_SIZE = 10.0
 
 /** Set up data texture to hold selected state information */
 const data = new Uint8Array(GRID_SIZE * GRID_SIZE * 4)
