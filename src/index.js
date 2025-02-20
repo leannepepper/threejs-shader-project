@@ -6,25 +6,32 @@ import {
   LightBrightMesh,
   selectedTexture
 } from './radianceCascade/LightBright.js'
-import RaymarchMesh from './shaders/Raymarch.js'
 import { probeGridRT, probeGridScene } from './radianceCascade/cascade.js'
 
 // Scene, Camera, Renderer
 const scene = new THREE.Scene()
 const raycaster = new THREE.Raycaster()
 const pointer = new THREE.Vector2()
-const camera = new THREE.PerspectiveCamera(
-  15,
-  window.innerWidth / window.innerHeight,
-  0.01,
+
+const aspect = window.innerWidth / window.innerHeight
+const frustumHeight = 1
+const frustumWidth = frustumHeight * aspect
+
+const camera = new THREE.OrthographicCamera(
+  frustumWidth / -2,
+  frustumWidth / 2,
+  frustumHeight / 2,
+  frustumHeight / -2,
+  0.1,
   1000
 )
+
+camera.position.set(0, 0, 1)
+
 const canvas = document.querySelector('canvas.canvas')
 
 const renderer = new WebGPURenderer({
   canvas: canvas,
-  antialias: true,
-  stencil: true,
   alpha: true
 })
 renderer.setSize(window.innerWidth, window.innerHeight)
@@ -32,20 +39,14 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setClearColor('#19191f')
 
 scene.add(LightBrightMesh)
-//scene.add(RaymarchMesh)
-
-// Camera
-camera.position.z = 150
-camera.position.y = 2
-camera.lookAt(0, 0, 0)
 
 // Controls
-// const cameraControls = new OrbitControls(camera, canvas)
-// cameraControls.enableDamping = true
+const cameraControls = new OrbitControls(camera, canvas)
+cameraControls.enableDamping = true
 
 // Animation Loop
 function animate () {
-  // cameraControls.update()
+  cameraControls.update()
 
   window.requestAnimationFrame(animate)
 
@@ -60,9 +61,13 @@ animate()
 selectCells()
 
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight
-  camera.updateProjectionMatrix()
-  renderer.setSize(window.innerWidth, window.innerHeight)
+  const dpr = window.devicePixelRatio
+  canvas.style.width = window.innerWidth + 'px'
+  canvas.style.height = window.innerHeight + 'px'
+  const w = canvas.clientWidth
+  const h = canvas.clientHeight
+
+  renderer.setSize(w * dpr, h * dpr, false)
 })
 
 // Track dragging state

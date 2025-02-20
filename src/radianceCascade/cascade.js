@@ -1,48 +1,25 @@
 import * as THREE from 'three'
-import { MeshBasicNodeMaterial } from 'three/webgpu'
 import {
-  MeshStandardNodeMaterial,
-  uniform,
-  color,
-  vec2,
-  vec3,
-  vec4,
-  modelWorldMatrix,
-  timerLocal,
-  positionLocal,
-  smoothstep,
-  mix,
-  varying,
-  mul,
-  sin,
-  uv,
-  timerGlobal,
-  triplanarTexture,
-  texture,
-  toVar,
-  step,
-  abs,
-  If,
-  Fn,
-  length,
-  screenSize,
-  screenCoordinate,
-  fract,
-  max,
-  float,
-  dFdx,
-  dFdy,
-  remap,
-  floor,
-  mod,
-  select,
-  cos,
   clamp,
-  dot
+  cos,
+  dot,
+  float,
+  floor,
+  Fn,
+  fract,
+  length,
+  max,
+  mix,
+  sin,
+  smoothstep,
+  uv,
+  vec2,
+  vec3
 } from 'three/tsl'
-import { GRID_SIZE } from './LightBright.js'
+import { MeshBasicNodeMaterial } from 'three/webgpu'
+//import { GRID_SIZE } from './LightBright.js'
 import Raymarch from './raymarch.js'
-//const GRID_SIZE = 4.0
+export const GRID_SIZE = 30.0
 
 export const probeGridScene = new THREE.Scene()
 export const probeGridRT = new THREE.WebGLRenderTarget(GRID_SIZE, GRID_SIZE, {
@@ -51,7 +28,6 @@ export const probeGridRT = new THREE.WebGLRenderTarget(GRID_SIZE, GRID_SIZE, {
   format: THREE.RGBAFormat
 })
 
-const planeGeometry = new THREE.PlaneGeometry(40, 40)
 const material = new MeshBasicNodeMaterial()
 
 const uvVar = uv()
@@ -81,7 +57,7 @@ const numRays = 8
 const baseAngle = float(45.0).mul(Math.PI).div(180.0) // 45 degrees in radians
 let rayVisualization = float(0.0)
 const probeCenter = vec2(0.5, 0.5)
-let colorOfRay = vec3(0.0)
+let accumulatedColor = vec3(0.0)
 
 for (let i = 0; i < numRays; i++) {
   const angle = baseAngle.add(
@@ -99,15 +75,14 @@ for (let i = 0; i < numRays; i++) {
   rayVisualization = max(rayVisualization, rayLine)
 
   // For each ray, lets ray march and visualize the distance
-  colorOfRay = max(
-    colorOfRay,
-    Raymarch({
-      cameraOrigin: probePos,
-      cameraDirection: rayDir
-    })
-  )
+  const rayColor = Raymarch({
+    cameraOrigin: probePos,
+    cameraDirection: rayDir
+  })
+  accumulatedColor = accumulatedColor.add(rayColor)
 }
 
+const colorOfRay = accumulatedColor.div(float(numRays))
 console.log({ colorOfRay })
 
 //const rayColor = vec3(1.0, 1.0, 0.0).mul(rayVisualization)
@@ -116,5 +91,7 @@ const finalColor = mix(gridColor, rayColor, rayVisualization)
 
 material.colorNode = finalColor
 
-const probeGridQuad = new THREE.Mesh(planeGeometry, material)
+const geometry = new THREE.PlaneGeometry(2, 2)
+const probeGridQuad = new THREE.Mesh(geometry, material)
+//probeGridQuad.position.set(0.5, 0.5, 0)
 probeGridScene.add(probeGridQuad)

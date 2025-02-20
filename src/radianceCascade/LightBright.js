@@ -1,44 +1,20 @@
 import * as THREE from 'three'
-import { MeshBasicNodeMaterial } from 'three/webgpu'
 import {
-  MeshStandardNodeMaterial,
-  uniform,
   color,
-  vec2,
-  vec3,
-  vec4,
-  modelWorldMatrix,
-  timerLocal,
-  positionLocal,
-  smoothstep,
-  mix,
-  varying,
-  mul,
-  sin,
-  uv,
-  timerGlobal,
-  triplanarTexture,
-  texture,
-  toVar,
-  step,
-  abs,
-  If,
-  Fn,
-  length,
-  screenSize,
-  screenCoordinate,
-  fract,
-  max,
   float,
-  dFdx,
-  dFdy,
-  remap,
   floor,
+  length,
+  mix,
   mod,
-  select
+  smoothstep,
+  texture,
+  uv,
+  vec2,
+  vec3
 } from 'three/tsl'
-
-export const GRID_SIZE = 10.0
+import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { probeGridRT } from './cascade.js'
+export const GRID_SIZE = 30.0
 
 /** Set up data texture to hold selected state information */
 const data = new Uint8Array(GRID_SIZE * GRID_SIZE * 4)
@@ -82,17 +58,23 @@ const texSample = texture(selectedTexture, vec2(u, v))
 const isSelected = texSample.a // use alpha channel to store selected state
 const randomColor = texSample.rgb
 
-// If isSelected is 255 (true), then use the rgb channels to color the cell
-// Otherwise, use the base color
-
-//const highlightColor = select(isSelected.equal(float(255)), texSample.r, 0)
-
 const baseColor = mix(black, shapeColor, circleMask)
 const selectedColor = mix(baseColor, randomColor, isSelected)
-const finalColor = mix(baseColor, selectedColor, circleMask)
+const lightBrightColor = mix(baseColor, selectedColor, circleMask)
+
+// what's in the probeGridRT?
+const probeGridTexture = texture(probeGridRT.texture, vec2(u, v))
+const probeGridColor = vec3(
+  probeGridTexture.r,
+  probeGridTexture.g,
+  probeGridTexture.b
+)
+
+// color the cell based on the probeGridRT intensity
+const finalColor = mix(lightBrightColor, probeGridColor, 0.5)
 
 material.colorNode = finalColor
 
-const geometry = new THREE.PlaneGeometry(40, 40, 100, 100)
-
+const geometry = new THREE.PlaneGeometry(2, 2)
 export const LightBrightMesh = new THREE.Mesh(geometry, material)
+//LightBrightMesh.position.set(0.5, 0.5, 0)
