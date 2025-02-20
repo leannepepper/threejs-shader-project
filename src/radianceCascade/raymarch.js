@@ -7,7 +7,10 @@ import {
   texture,
   vec2,
   vec3,
-  vec4
+  vec4,
+  uv,
+  floor,
+  mod
 } from 'three/tsl'
 import { selectedTexture, GRID_SIZE } from './LightBright.js'
 
@@ -18,25 +21,33 @@ import { selectedTexture, GRID_SIZE } from './LightBright.js'
  */
 const calculateSelectedTextLookup = Fn(({ pos }) => {
   const currentShapeDist = float(0.0).toVar()
-  const sceneForShapes = float(0.0).toVar()
   const colorForShapes = vec3(0.0).toVar()
 
   // Convert the position to a grid coordinate
-  const gridPos = pos.mul(float(GRID_SIZE)).toVar()
-  const u = gridPos.x.div(float(GRID_SIZE))
-  const v = gridPos.y.div(float(GRID_SIZE))
+  const uvVar = uv()
+  const st = vec2(uvVar.mul(GRID_SIZE))
+
+  const sqrt3 = float(Math.sqrt(3))
+  const s = sqrt3.div(2.0) // TODO: Fix index bug
+
+  const rowIndex = floor(st.y.div(s))
+  const parity = mod(rowIndex, float(2.0))
+  const colIndex = floor(st.x.sub(parity.mul(0.5)))
+
+  const u = colIndex.add(0.5).div(float(GRID_SIZE))
+  const v = rowIndex.add(0.5).div(float(GRID_SIZE))
 
   // Use the selectedTexture to look up the state of the grid at the current position
   const texSample = texture(selectedTexture, vec2(u, v))
   const isSelected = texSample.a // use alpha channel to store selected state
-  const randomColor = texSample.rgb
+  const cellColor = texSample.rgb
 
   // Set the color and dist based on the selected state
   If(isSelected.greaterThan(0.5), () => {
-    colorForShapes.assign(vec3(0.0, 1.0, 0.0)) // Green
+    colorForShapes.assign(vec3(cellColor.r, cellColor.g, cellColor.b))
     currentShapeDist.assign(0.0) // Selected
   }).Else(() => {
-    colorForShapes.assign(vec3(1.0, 0.0, 0.0)) // Red
+    colorForShapes.assign(vec3(0.0, 0.0, 0.0)) // Red
     currentShapeDist.assign(1.0) // Not selected
   })
 

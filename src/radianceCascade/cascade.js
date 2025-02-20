@@ -83,13 +83,12 @@ for (let i = 0; i < numRays; i++) {
 }
 
 const colorOfRay = accumulatedColor.div(float(numRays))
-console.log({ colorOfRay })
 
 //const rayColor = vec3(1.0, 1.0, 0.0).mul(rayVisualization)
 const rayColor = colorOfRay.mul(rayVisualization)
 const finalColor = mix(gridColor, rayColor, rayVisualization)
 
-material.colorNode = finalColor
+material.colorNode = colorOfRay //finalColor
 
 const geometry = new THREE.PlaneGeometry(2, 2)
 const probeGridQuad = new THREE.Mesh(geometry, material)
