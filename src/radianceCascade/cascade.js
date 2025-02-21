@@ -17,19 +17,10 @@ import {
   vec3
 } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
-//import { GRID_SIZE } from './LightBright.js'
+import { GRID_SIZE } from './constants.js'
 import Raymarch from './raymarch.js'
-export const GRID_SIZE = 30.0
-
-export const probeGridScene = new THREE.Scene()
-export const probeGridRT = new THREE.WebGLRenderTarget(GRID_SIZE, GRID_SIZE, {
-  minFilter: THREE.LinearFilter,
-  magFilter: THREE.LinearFilter,
-  format: THREE.RGBAFormat
-})
 
 const material = new MeshBasicNodeMaterial()
-
 const uvVar = uv()
 const st = vec2(uvVar.mul(GRID_SIZE))
 const cell = floor(st)
@@ -84,13 +75,11 @@ for (let i = 0; i < numRays; i++) {
 
 const colorOfRay = accumulatedColor.div(float(numRays))
 
-//const rayColor = vec3(1.0, 1.0, 0.0).mul(rayVisualization)
 const rayColor = colorOfRay.mul(rayVisualization)
 const finalColor = mix(gridColor, rayColor, rayVisualization)
 
-material.colorNode = colorOfRay //finalColor
+material.colorNode = finalColor
 
 const geometry = new THREE.PlaneGeometry(2, 2)
-const probeGridQuad = new THREE.Mesh(geometry, material)
-//probeGridQuad.position.set(0.5, 0.5, 0)
-probeGridScene.add(probeGridQuad)
+export const probeGridQuad = new THREE.Mesh(geometry, material)
+probeGridQuad.position.set(0.0, 0.0, 0)

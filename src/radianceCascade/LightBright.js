@@ -13,18 +13,7 @@ import {
   vec3
 } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
-import { probeGridRT } from './cascade.js'
-export const GRID_SIZE = 30.0
-
-/** Set up data texture to hold selected state information */
-const data = new Uint8Array(GRID_SIZE * GRID_SIZE * 4)
-export const selectedTexture = new THREE.DataTexture(
-  data,
-  GRID_SIZE,
-  GRID_SIZE,
-  THREE.RGBAFormat
-)
-selectedTexture.needsUpdate = true
+import { GRID_SIZE, selectedTexture } from './constants.js'
 
 /** Create Mesh with Honeycomb Grid and Lights */
 const material = new MeshBasicNodeMaterial()
@@ -60,21 +49,10 @@ const randomColor = texSample.rgb
 
 const baseColor = mix(black, shapeColor, circleMask)
 const selectedColor = mix(baseColor, randomColor, isSelected)
-const lightBrightColor = mix(baseColor, selectedColor, circleMask)
-
-// what's in the probeGridRT?
-const probeGridTexture = texture(probeGridRT.texture, vec2(u, v))
-const probeGridColor = vec3(
-  probeGridTexture.r,
-  probeGridTexture.g,
-  probeGridTexture.b
-)
-
-// color the cell based on the probeGridRT intensity
-const finalColor = mix(lightBrightColor, probeGridColor, 0.5)
+const finalColor = mix(baseColor, selectedColor, circleMask)
 
 material.colorNode = finalColor
 
 const geometry = new THREE.PlaneGeometry(2, 2)
 export const LightBrightMesh = new THREE.Mesh(geometry, material)
-//LightBrightMesh.position.set(0.5, 0.5, 0)
+LightBrightMesh.position.set(0.0, 0.0, 0.0)

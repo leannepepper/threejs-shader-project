@@ -1,74 +1,71 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { WebGPURenderer } from 'three/webgpu'
-import {
-  GRID_SIZE,
-  LightBrightMesh,
-  selectedTexture
-} from './radianceCascade/LightBright.js'
-import { probeGridRT, probeGridScene } from './radianceCascade/cascade.js'
+import { afterImage } from 'three/addons/tsl/display/AfterImageNode.js'
+import { pass } from 'three/tsl'
+import { PostProcessing, WebGPURenderer } from 'three/webgpu'
+import { probeGridQuad } from './radianceCascade/cascade.js'
+import { GRID_SIZE, selectedTexture } from './radianceCascade/constants.js'
+import { LightBrightMesh } from './radianceCascade/LightBright.js'
+import { lightingPass } from './radianceCascade/lightingPass.js'
 
-// Scene, Camera, Renderer
-const scene = new THREE.Scene()
 const raycaster = new THREE.Raycaster()
 const pointer = new THREE.Vector2()
 
-const aspect = window.innerWidth / window.innerHeight
-const frustumHeight = 1
-const frustumWidth = frustumHeight * aspect
+let camera, scene, renderer
+let postProcessing, renderTarget
 
-const camera = new THREE.OrthographicCamera(
-  frustumWidth / -2,
-  frustumWidth / 2,
-  frustumHeight / 2,
-  frustumHeight / -2,
-  0.1,
-  1000
-)
+init()
 
-camera.position.set(0, 0, 1)
+function init () {
+  renderer = new WebGPURenderer({ antialias: true })
+  renderer.setPixelRatio(window.devicePixelRatio)
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setAnimationLoop(render)
+  document.body.appendChild(renderer.domElement)
 
-const canvas = document.querySelector('canvas.canvas')
+  // Scene
+  scene = new THREE.Scene()
+  scene.background = new THREE.Color(0x222222)
 
-const renderer = new WebGPURenderer({
-  canvas: canvas,
-  alpha: true
-})
-renderer.setSize(window.innerWidth, window.innerHeight)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-renderer.setClearColor('#19191f')
+  camera = new THREE.PerspectiveCamera(
+    70,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    50
+  )
+  camera.position.z = 4
 
-scene.add(LightBrightMesh)
+  scene.add(LightBrightMesh)
 
-// Controls
-const cameraControls = new OrbitControls(camera, canvas)
-cameraControls.enableDamping = true
+  // Post Processing
+  postProcessing = new PostProcessing(renderer)
+  const scenePass = pass(scene, camera)
+  const scenePassColor = scenePass.getTextureNode()
 
-// Animation Loop
-function animate () {
-  cameraControls.update()
+  let combinedPass = scenePassColor
+  combinedPass = lightingPass(combinedPass, 1.0)
 
-  window.requestAnimationFrame(animate)
+  postProcessing.outputNode = combinedPass
 
-  renderer.setRenderTarget(probeGridRT)
-  renderer.renderAsync(probeGridScene, camera)
-  renderer.setRenderTarget(null)
+  // Controls
+  new OrbitControls(camera, renderer.domElement)
 
-  renderer.renderAsync(scene, camera)
+  window.addEventListener('resize', onWindowResize)
 }
 
-animate()
-selectCells()
+function onWindowResize () {
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
 
-window.addEventListener('resize', () => {
-  const dpr = window.devicePixelRatio
-  canvas.style.width = window.innerWidth + 'px'
-  canvas.style.height = window.innerHeight + 'px'
-  const w = canvas.clientWidth
-  const h = canvas.clientHeight
+  renderer.setSize(window.innerWidth, window.innerHeight)
 
-  renderer.setSize(w * dpr, h * dpr, false)
-})
+  const dpr = renderer.getPixelRatio()
+  renderTarget.setSize(window.innerWidth * dpr, window.innerHeight * dpr)
+}
+
+function render (time) {
+  postProcessing.render()
+}
 
 // Track dragging state
 let isDragging = false
@@ -110,22 +107,6 @@ function toggleLight (event) {
 
     lastHitIndex = index
   }
-}
-
-// For debugging purposes, hardcode some cells to be selected
-function selectCells () {
-  const data = selectedTexture.image.data
-  for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
-    // Randomly select some cells
-    if (Math.random() < 0.1) {
-      const index = 4 * i
-      data[index + 0] = Math.floor(Math.random() * 256)
-      data[index + 1] = Math.floor(Math.random() * 256)
-      data[index + 2] = 255
-      data[index + 3] = 255
-    }
-  }
-  selectedTexture.needsUpdate = true
 }
 
 // Update mouse position for raycasting

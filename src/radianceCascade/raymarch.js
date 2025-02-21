@@ -10,9 +10,11 @@ import {
   vec4,
   uv,
   floor,
-  mod
+  mod,
+  length,
+  smoothstep
 } from 'three/tsl'
-import { selectedTexture, GRID_SIZE } from './LightBright.js'
+import { GRID_SIZE, selectedTexture } from './constants.js'
 
 /**
  * Calculate the selected state of the grid at the current position
@@ -23,7 +25,6 @@ const calculateSelectedTextLookup = Fn(({ pos }) => {
   const currentShapeDist = float(0.0).toVar()
   const colorForShapes = vec3(0.0).toVar()
 
-  // Convert the position to a grid coordinate
   const uvVar = uv()
   const st = vec2(uvVar.mul(GRID_SIZE))
 
@@ -38,16 +39,17 @@ const calculateSelectedTextLookup = Fn(({ pos }) => {
   const v = rowIndex.add(0.5).div(float(GRID_SIZE))
 
   // Use the selectedTexture to look up the state of the grid at the current position
-  const texSample = texture(selectedTexture, vec2(u, v))
+  const texSample = texture(selectedTexture, vec2(pos.x, pos.y))
   const isSelected = texSample.a // use alpha channel to store selected state
   const cellColor = texSample.rgb
 
   // Set the color and dist based on the selected state
   If(isSelected.greaterThan(0.5), () => {
     colorForShapes.assign(vec3(cellColor.r, cellColor.g, cellColor.b))
+    // colorForShapes.assign(vec3(0.0, 0.0, 0.0)) // Black
     currentShapeDist.assign(0.0) // Selected
   }).Else(() => {
-    colorForShapes.assign(vec3(0.0, 0.0, 0.0)) // Red
+    colorForShapes.assign(vec3(1.0, 1.0, 1.0)) // Black
     currentShapeDist.assign(1.0) // Not selected
   })
 
