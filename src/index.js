@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { afterImage } from 'three/addons/tsl/display/AfterImageNode.js'
-import { pass } from 'three/tsl'
+import { pass, convertToTexture } from 'three/tsl'
 import { PostProcessing, WebGPURenderer } from 'three/webgpu'
 import { probeGridQuad } from './radianceCascade/cascade.js'
 import { GRID_SIZE, selectedTexture } from './radianceCascade/constants.js'
@@ -33,7 +33,7 @@ function init () {
     0.1,
     50
   )
-  camera.position.z = 4
+  camera.position.z = 1
 
   scene.add(LightBrightMesh)
 
@@ -43,12 +43,12 @@ function init () {
   const scenePassColor = scenePass.getTextureNode()
 
   let combinedPass = scenePassColor
-  combinedPass = lightingPass(combinedPass, 1.0)
+  combinedPass = lightingPass(combinedPass, 0.8)
 
   postProcessing.outputNode = combinedPass
 
   // Controls
-  new OrbitControls(camera, renderer.domElement)
+  //new OrbitControls(camera, renderer.domElement)
 
   window.addEventListener('resize', onWindowResize)
 }
@@ -58,9 +58,6 @@ function onWindowResize () {
   camera.updateProjectionMatrix()
 
   renderer.setSize(window.innerWidth, window.innerHeight)
-
-  const dpr = renderer.getPixelRatio()
-  renderTarget.setSize(window.innerWidth * dpr, window.innerHeight * dpr)
 }
 
 function render (time) {
