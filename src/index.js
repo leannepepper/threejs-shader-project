@@ -7,12 +7,17 @@ import { probeGridQuad } from './radianceCascade/cascade.js'
 import { GRID_SIZE, selectedTexture } from './radianceCascade/constants.js'
 import { LightBrightMesh } from './radianceCascade/LightBright.js'
 import { lightingPass } from './radianceCascade/lightingPass.js'
+import { colorPicker } from './radianceCascade/ColorPicker.js'
+
+let isDragging = false
+let lastHitIndex = -1
+let holdingShift = false
+
+let camera, scene, renderer
+let postProcessing
 
 const raycaster = new THREE.Raycaster()
 const pointer = new THREE.Vector2()
-
-let camera, scene, renderer
-let postProcessing, renderTarget
 
 init()
 
@@ -36,6 +41,7 @@ function init () {
   camera.position.z = 1
 
   scene.add(LightBrightMesh)
+  scene.add(colorPicker)
 
   // Post Processing
   postProcessing = new PostProcessing(renderer)
@@ -49,8 +55,6 @@ function init () {
 
   // Controls
   //new OrbitControls(camera, renderer.domElement)
-
-  window.addEventListener('resize', onWindowResize)
 }
 
 function onWindowResize () {
@@ -63,11 +67,6 @@ function onWindowResize () {
 function render (time) {
   postProcessing.render()
 }
-
-// Track dragging state
-let isDragging = false
-let lastHitIndex = -1
-let holdingShift = false
 
 // Toggle light via raycasting
 function toggleLight (event) {
@@ -91,9 +90,13 @@ function toggleLight (event) {
       return
     }
 
-    const r = Math.floor(Math.random() * 256)
-    const g = Math.floor(Math.random() * 256)
-    const b = Math.floor(Math.random() * 256)
+    const colorVariants = [
+      [0, Math.random() * 150, Math.random() * 150],
+      [Math.random() * 150, 0, Math.random() * 150],
+      [Math.random() * 150, Math.random() * 150, 0]
+    ]
+    const [r, g, b] =
+      colorVariants[Math.floor(Math.random() * colorVariants.length)]
 
     data[index + 0] = r
     data[index + 1] = g
@@ -119,8 +122,8 @@ function onPointerDown (event) {
 }
 
 function onPointerMove (event) {
+  updateMousePosition(event)
   if (isDragging) {
-    updateMousePosition(event)
     toggleLight()
   }
 }
@@ -132,17 +135,40 @@ function onPointerUp () {
 function onKeyDown (event) {
   if (event.key === 'Shift') {
     holdingShift = true
+
+    const colorP = scene.getObjectByName('colorPicker')
+    if (colorP) {
+      colorP.visible = true
+    }
   }
 }
 
 function onKeyUp (event) {
   if (event.key === 'Shift') {
     holdingShift = false
+
+    const colorP = scene.getObjectByName('colorPicker')
+    if (colorP) {
+      colorP.visible = false
+    }
+  }
+}
+
+function onMouseMove (event) {
+  raycaster.setFromCamera(pointer, camera)
+  const intersects = raycaster.intersectObject(LightBrightMesh)
+  const colorPicker = scene.getObjectByName('colorPicker')
+
+  if (intersects.length > 0 && colorPicker) {
+    const point = intersects[0].point
+    colorPicker.position.set(point.x, point.y, 0)
   }
 }
 
 window.addEventListener('pointerdown', onPointerDown)
 window.addEventListener('pointermove', onPointerMove)
+window, addEventListener('mousemove', onMouseMove)
 window.addEventListener('pointerup', onPointerUp)
 window.addEventListener('keydown', onKeyDown)
+window.addEventListener('resize', onWindowResize)
 window.addEventListener('keyup', onKeyUp)

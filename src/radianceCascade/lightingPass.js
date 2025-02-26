@@ -166,8 +166,7 @@ class RadianceCascadeNode extends TempNode {
           glowColor,
           smoothstep(0.0, 1.0, bloomFactor)
         )
-
-        colorForShapes.assign(bloomEffect)
+        colorForShapes.assign(cellColor.add(bloomEffect))
       })
 
       // **Multiply final bloom effect onto the texture**
