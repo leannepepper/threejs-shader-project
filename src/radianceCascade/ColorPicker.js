@@ -1,6 +1,13 @@
 import * as THREE from 'three'
 
-const colors = [0xff0000, 0x0000ff, 0x00ff00, 0xffff00, 0xff00ff, 0x800080]
+const colors = [
+  '#ff3901',
+  '#0fffff',
+  '#5cb000',
+  '#ff8a85',
+  '#fefc2e',
+  '#ff9200'
+]
 export const colorPicker = new THREE.Group()
 
 const squareSize = 0.1
@@ -9,7 +16,7 @@ const numRows = 2
 const totalWidth = numColumns * squareSize
 const totalHeight = numRows * squareSize
 
-for (let i = 0; i < 6; i++) {
+for (let i = 0; i < colors.length; i++) {
   const geometry = new THREE.PlaneGeometry(squareSize, squareSize)
   const material = new THREE.MeshBasicMaterial({
     color: colors[i],
@@ -22,6 +29,7 @@ for (let i = 0; i < 6; i++) {
     Math.floor(i / 3) * -squareSize + totalHeight / 2 - squareSize / 2
 
   square.userData.color = colors[i]
+  square.name = colors[i].toString(16)
   colorPicker.add(square)
 }
 

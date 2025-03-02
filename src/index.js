@@ -1,13 +1,10 @@
 import * as THREE from 'three'
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { afterImage } from 'three/addons/tsl/display/AfterImageNode.js'
-import { pass, convertToTexture } from 'three/tsl'
+import { pass } from 'three/tsl'
 import { PostProcessing, WebGPURenderer } from 'three/webgpu'
-import { probeGridQuad } from './radianceCascade/cascade.js'
+import { colorPicker } from './radianceCascade/ColorPicker.js'
 import { GRID_SIZE, selectedTexture } from './radianceCascade/constants.js'
 import { LightBrightMesh } from './radianceCascade/LightBright.js'
 import { lightingPass } from './radianceCascade/lightingPass.js'
-import { colorPicker } from './radianceCascade/ColorPicker.js'
 
 let isDragging = false
 let lastHitIndex = -1
@@ -18,6 +15,7 @@ let postProcessing
 
 const raycaster = new THREE.Raycaster()
 const pointer = new THREE.Vector2()
+const selectedColor = new THREE.Color()
 
 init()
 
@@ -69,9 +67,10 @@ function render (time) {
 }
 
 // Toggle light via raycasting
-function toggleLight (event) {
+function toggleLight () {
   raycaster.setFromCamera(pointer, camera)
-  const intersects = raycaster.intersectObject(LightBrightMesh)
+  const intersects = raycaster.intersectObjects([LightBrightMesh])
+
   if (intersects.length > 0) {
     const uv = intersects[0].uv
 
@@ -90,17 +89,9 @@ function toggleLight (event) {
       return
     }
 
-    const colorVariants = [
-      [0, Math.random() * 150, Math.random() * 150],
-      [Math.random() * 150, 0, Math.random() * 150],
-      [Math.random() * 150, Math.random() * 150, 0]
-    ]
-    const [r, g, b] =
-      colorVariants[Math.floor(Math.random() * colorVariants.length)]
-
-    data[index + 0] = r
-    data[index + 1] = g
-    data[index + 2] = b
+    data[index + 0] = selectedColor.r * 255
+    data[index + 1] = selectedColor.g * 255
+    data[index + 2] = selectedColor.b * 255
 
     data[index + 3] = data[index + 3] = holdingShift ? 0 : 255
     selectedTexture.needsUpdate = true
@@ -115,10 +106,23 @@ function updateMousePosition (event) {
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
 }
 
+function changeSelectColor (event) {
+  raycaster.setFromCamera(pointer, camera)
+  const intersects = raycaster.intersectObjects([colorPicker])
+
+  if (intersects.length > 0) {
+    const colorName = intersects[0].object.userData.color
+    if (colorName) {
+      selectedColor.set(colorName)
+    }
+  }
+}
+
 function onPointerDown (event) {
   isDragging = true
   updateMousePosition(event)
   toggleLight()
+  changeSelectColor()
 }
 
 function onPointerMove (event) {
@@ -155,6 +159,10 @@ function onKeyUp (event) {
 }
 
 function onMouseMove (event) {
+  const colorP = scene.getObjectByName('colorPicker')
+  if (colorP.visible) {
+    return
+  }
   raycaster.setFromCamera(pointer, camera)
   const intersects = raycaster.intersectObject(LightBrightMesh)
   const colorPicker = scene.getObjectByName('colorPicker')
@@ -167,7 +175,7 @@ function onMouseMove (event) {
 
 window.addEventListener('pointerdown', onPointerDown)
 window.addEventListener('pointermove', onPointerMove)
-window, addEventListener('mousemove', onMouseMove)
+window.addEventListener('mousemove', onMouseMove)
 window.addEventListener('pointerup', onPointerUp)
 window.addEventListener('keydown', onKeyDown)
 window.addEventListener('resize', onWindowResize)
