@@ -1,10 +1,13 @@
 import * as THREE from 'three'
-import { pass } from 'three/tsl'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { afterImage } from 'three/addons/tsl/display/AfterImageNode.js'
+import { pass, convertToTexture } from 'three/tsl'
 import { PostProcessing, WebGPURenderer } from 'three/webgpu'
-import { colorPicker } from './radianceCascade/ColorPicker.js'
+import { probeGridQuad } from './radianceCascade/cascade.js'
 import { GRID_SIZE, selectedTexture } from './radianceCascade/constants.js'
 import { LightBrightMesh } from './radianceCascade/LightBright.js'
 import { lightingPass } from './radianceCascade/lightingPass.js'
+import { colorPicker } from './radianceCascade/ColorPicker.js'
 
 let isDragging = false
 let lastHitIndex = -1
@@ -106,11 +109,14 @@ function updateMousePosition (event) {
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
 }
 
-function changeSelectColor (event) {
+function changeSelectColor () {
   raycaster.setFromCamera(pointer, camera)
+  if (!colorPicker.visible) {
+    return
+  }
   const intersects = raycaster.intersectObjects([colorPicker])
 
-  if (intersects.length > 0) {
+  if (intersects.length > 0 && colorPicker?.visible) {
     const colorName = intersects[0].object.userData.color
     if (colorName) {
       selectedColor.set(colorName)
@@ -159,6 +165,7 @@ function onKeyUp (event) {
 }
 
 function onMouseMove (event) {
+  updateMousePosition(event)
   const colorP = scene.getObjectByName('colorPicker')
   if (colorP.visible) {
     return
