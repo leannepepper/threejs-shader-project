@@ -12,6 +12,7 @@ import { colorPicker } from './radianceCascade/ColorPicker.js'
 let isDragging = false
 let lastHitIndex = -1
 let holdingShift = false
+let holdingCommand = false
 
 let camera, scene, renderer
 let postProcessing
@@ -145,6 +146,9 @@ function onPointerUp () {
 function onKeyDown (event) {
   if (event.key === 'Shift') {
     holdingShift = true
+  }
+  if (event.key === 'Meta') {
+    holdingCommand = true
 
     const colorP = scene.getObjectByName('colorPicker')
     if (colorP) {
@@ -154,13 +158,11 @@ function onKeyDown (event) {
 }
 
 function onKeyUp (event) {
-  if (event.key === 'Shift') {
-    holdingShift = false
-
-    const colorP = scene.getObjectByName('colorPicker')
-    if (colorP) {
-      colorP.visible = false
-    }
+  holdingShift = false
+  holdingCommand = false
+  const colorP = scene.getObjectByName('colorPicker')
+  if (colorP) {
+    colorP.visible = false
   }
 }
 
