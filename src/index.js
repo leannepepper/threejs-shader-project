@@ -7,19 +7,23 @@ import { probeGridQuad } from './radianceCascade/cascade.js'
 import { GRID_SIZE, selectedTexture } from './radianceCascade/constants.js'
 import { LightBrightMesh } from './radianceCascade/LightBright.js'
 import { lightingPass } from './radianceCascade/lightingPass.js'
-import { colorPicker } from './radianceCascade/ColorPicker.js'
+import { colorPicker, colors } from './radianceCascade/ColorPicker.js'
+import { all } from 'three/tsl'
+
+const flowers = [{ index: 4056, color: colors.green }]
 
 let isDragging = false
 let lastHitIndex = -1
 let holdingShift = false
 let holdingCommand = false
+let allSelected = []
 
 let camera, scene, renderer
 let postProcessing
 
 const raycaster = new THREE.Raycaster()
 const pointer = new THREE.Vector2()
-const selectedColor = new THREE.Color()
+let selectedColor = colors.orange
 
 init()
 
@@ -55,8 +59,10 @@ function init () {
 
   postProcessing.outputNode = combinedPass
 
-  // Controls
-  //new OrbitControls(camera, renderer.domElement)
+  // draw image
+  for (const flower of flowers) {
+    updateColor(flower.index, new THREE.Color(flower.color))
+  }
 }
 
 function onWindowResize () {
@@ -86,21 +92,34 @@ function toggleLight () {
     const parity = row % 2
     let col = Math.floor(stX - parity * 0.5)
 
-    const data = selectedTexture.image.data
     const index = 4 * (col + row * GRID_SIZE)
-
     if (index === lastHitIndex) {
       return
     }
 
-    data[index + 0] = selectedColor.r * 255
-    data[index + 1] = selectedColor.g * 255
-    data[index + 2] = selectedColor.b * 255
-
-    data[index + 3] = data[index + 3] = holdingShift ? 0 : 255
-    selectedTexture.needsUpdate = true
+    updateColor(index, selectedColor)
 
     lastHitIndex = index
+  }
+}
+
+// update color
+function updateColor (index, color) {
+  const data = selectedTexture.image.data
+  const convertedColor = new THREE.Color(color)
+  data[index + 0] = convertedColor.r * 255
+  data[index + 1] = convertedColor.g * 255
+  data[index + 2] = convertedColor.b * 255
+  data[index + 3] = holdingShift ? 0 : 255
+  selectedTexture.needsUpdate = true
+
+  if (!holdingShift) {
+    let colorKey = Object.keys(colors).find(key => colors[key] === color)
+    allSelected.push({ index, color: colorKey })
+    console.log({ allSelected })
+  } else if (holdingShift) {
+    allSelected = allSelected.filter(({ index: i }) => i !== index)
+    console.log({ allSelected })
   }
 }
 
@@ -120,7 +139,7 @@ function changeSelectColor () {
   if (intersects.length > 0 && colorPicker?.visible) {
     const colorName = intersects[0].object.userData.color
     if (colorName) {
-      selectedColor.set(colorName)
+      selectedColor = colorName
     }
   }
 }
