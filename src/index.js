@@ -8,9 +8,7 @@ import { GRID_SIZE, selectedTexture } from './radianceCascade/constants.js'
 import { LightBrightMesh } from './radianceCascade/LightBright.js'
 import { lightingPass } from './radianceCascade/lightingPass.js'
 import { colorPicker, colors } from './radianceCascade/ColorPicker.js'
-import { all } from 'three/tsl'
-
-const flowers = [{ index: 4056, color: colors.green }]
+import { flowers } from './radianceCascade/constants.js'
 
 let isDragging = false
 let lastHitIndex = -1
@@ -107,19 +105,24 @@ function toggleLight () {
 function updateColor (index, color) {
   const data = selectedTexture.image.data
   const convertedColor = new THREE.Color(color)
+
   data[index + 0] = convertedColor.r * 255
   data[index + 1] = convertedColor.g * 255
   data[index + 2] = convertedColor.b * 255
   data[index + 3] = holdingShift ? 0 : 255
+
   selectedTexture.needsUpdate = true
 
   if (!holdingShift) {
-    let colorKey = Object.keys(colors).find(key => colors[key] === color)
-    allSelected.push({ index, color: colorKey })
-    console.log({ allSelected })
+    const selectedHex = convertedColor.getHexString()
+
+    const selectedKey = Object.entries(colors).find(
+      ([key, value]) => value.replace('#', '') === selectedHex
+    )?.[0]
+
+    allSelected.push({ index, color: selectedKey })
   } else if (holdingShift) {
     allSelected = allSelected.filter(({ index: i }) => i !== index)
-    console.log({ allSelected })
   }
 }
 
@@ -197,7 +200,7 @@ function onMouseMove (event) {
 
   if (intersects.length > 0 && colorPicker) {
     const point = intersects[0].point
-    colorPicker.position.set(point.x, point.y, 0)
+    colorPicker.position.set(point.x, point.y, 0.1)
   }
 }
 
