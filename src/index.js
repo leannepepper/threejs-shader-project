@@ -53,7 +53,7 @@ function init () {
   const scenePassColor = scenePass.getTextureNode()
 
   let combinedPass = scenePassColor
-  combinedPass = lightingPass(combinedPass, 0.8)
+  // combinedPass = lightingPass(combinedPass, 0.8)
 
   postProcessing.outputNode = combinedPass
 
