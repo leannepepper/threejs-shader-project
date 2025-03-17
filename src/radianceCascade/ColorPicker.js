@@ -57,7 +57,7 @@ const centerMaterial = new THREE.MeshBasicMaterial({
 const centerCircle = new THREE.Mesh(centerGeometry, centerMaterial)
 centerCircle.position.set(0, 0, 0)
 centerCircle.userData.color = '#ffffff'
-centerCircle.name = 'centerCircle'
+centerCircle.name = 'remove'
 colorPicker.add(centerCircle)
 
 // --- Create Slash Over the Center Circle ---

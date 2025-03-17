@@ -12,7 +12,7 @@ import { flowers } from './radianceCascade/constants.js'
 
 let isDragging = false
 let lastHitIndex = -1
-let holdingShift = false
+let holdingRemove = false
 let holdingCommand = false
 let allSelected = []
 
@@ -109,11 +109,11 @@ function updateColor (index, color) {
   data[index + 0] = convertedColor.r * 255
   data[index + 1] = convertedColor.g * 255
   data[index + 2] = convertedColor.b * 255
-  data[index + 3] = holdingShift ? 0 : 255
+  data[index + 3] = holdingRemove ? 0 : 255
 
   selectedTexture.needsUpdate = true
 
-  if (!holdingShift) {
+  if (!holdingRemove) {
     const selectedHex = convertedColor.getHexString()
 
     const selectedKey = Object.entries(colors).find(
@@ -121,7 +121,7 @@ function updateColor (index, color) {
     )?.[0]
 
     allSelected.push({ index, color: selectedKey })
-  } else if (holdingShift) {
+  } else if (holdingRemove) {
     allSelected = allSelected.filter(({ index: i }) => i !== index)
   }
 }
@@ -135,6 +135,7 @@ function updateMousePosition (event) {
 function changeSelectColor () {
   raycaster.setFromCamera(pointer, camera)
   if (!colorPicker.visible) {
+    toggleLight()
     return
   }
   const intersects = raycaster.intersectObjects([colorPicker])
@@ -143,6 +144,11 @@ function changeSelectColor () {
     const colorName = intersects[0].object.userData.color
     if (colorName) {
       selectedColor = colorName
+      if (intersects[0].object.name === 'remove') {
+        holdingRemove = true
+      } else {
+        holdingRemove = false
+      }
     }
   }
 }
@@ -150,7 +156,6 @@ function changeSelectColor () {
 function onPointerDown (event) {
   isDragging = true
   updateMousePosition(event)
-  toggleLight()
   changeSelectColor()
 }
 
@@ -166,9 +171,6 @@ function onPointerUp () {
 }
 
 function onKeyDown (event) {
-  if (event.key === 'Shift') {
-    holdingShift = true
-  }
   if (event.key === 'Meta') {
     holdingCommand = true
 
@@ -180,7 +182,6 @@ function onKeyDown (event) {
 }
 
 function onKeyUp (event) {
-  holdingShift = false
   holdingCommand = false
   const colorP = scene.getObjectByName('colorPicker')
   if (colorP) {
