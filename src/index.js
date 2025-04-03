@@ -11,7 +11,6 @@ import { colorPicker, colors } from './radianceCascade/ColorPicker.js'
 import { flowers } from './radianceCascade/constants.js'
 
 let isDragging = false
-let lastHitIndex = -1
 let holdingRemove = false
 let holdingCommand = false
 let allSelected = []
@@ -91,13 +90,7 @@ function toggleLight () {
     let col = Math.floor(stX - parity * 0.5)
 
     const index = 4 * (col + row * GRID_SIZE)
-    if (index === lastHitIndex) {
-      return
-    }
-
     updateColor(index, selectedColor)
-
-    lastHitIndex = index
   }
 }
 
