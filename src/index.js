@@ -1,14 +1,13 @@
 import * as THREE from 'three'
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { afterImage } from 'three/addons/tsl/display/AfterImageNode.js'
-import { pass, convertToTexture } from 'three/tsl'
+import { pass } from 'three/tsl'
 import { PostProcessing, WebGPURenderer } from 'three/webgpu'
-import { probeGridQuad } from './radianceCascade/cascade.js'
-import { GRID_SIZE, selectedTexture } from './radianceCascade/constants.js'
-import { LightBrightMesh } from './radianceCascade/LightBright.js'
-import { lightingPass } from './radianceCascade/lightingPass.js'
 import { colorPicker, colors } from './radianceCascade/ColorPicker.js'
-import { flowers } from './radianceCascade/constants.js'
+import {
+  flowers,
+  GRID_SIZE,
+  selectedTexture
+} from './radianceCascade/constants.js'
+import { LightBrightMesh } from './radianceCascade/LightBright.js'
 
 let isDragging = false
 let holdingRemove = false
@@ -182,13 +181,39 @@ function onKeyUp (event) {
   }
 }
 
+let hoveredSwatch = null
+
 function onMouseMove (event) {
   updateMousePosition(event)
+  raycaster.setFromCamera(pointer, camera)
+
   const colorP = scene.getObjectByName('colorPicker')
   if (colorP.visible) {
+    const intersects = raycaster.intersectObject(colorP, true)
+    const swatch =
+      intersects?.[0] && intersects?.[0].object.name
+        ? intersects[0].object
+        : null
+
+    if (swatch !== hoveredSwatch) {
+      if (hoveredSwatch) {
+        hoveredSwatch.scale.set(1, 1, 1)
+        hoveredSwatch = null
+      }
+      if (swatch) {
+        swatch.scale.set(1.2, 1.2, 1.2)
+        hoveredSwatch = swatch
+      }
+    }
     return
   }
-  raycaster.setFromCamera(pointer, camera)
+
+  // If color picker isn't visible, reset the hovered swatch
+  if (hoveredSwatch) {
+    hoveredSwatch.scale.set(1, 1, 1)
+    hoveredSwatch = null
+  }
+
   const intersects = raycaster.intersectObject(LightBrightMesh)
   const colorPicker = scene.getObjectByName('colorPicker')
 
